@@ -1,0 +1,11 @@
+[package]
+name = "awesome_oak"
+version = "0.1.0"
+authors = ["Jose Narvaez <goyox86@gmail.com>"]
+
+[dependencies.oak]
+git = "https://github.com/ptal/oak.git"
+
+[dependencies.oak_runtime]
+git = "https://github.com/ptal/oak.git"
+path = "runtime"
