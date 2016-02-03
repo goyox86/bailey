@@ -50,39 +50,50 @@ grammar! awesome {
     = identifier bind_op expression
 
   expression
-    = spacing term (term_op term)* > fold_left
+    = spacing cond_expr (cond_expr_op cond_expr)* > fold_left
 
-  call
-    = identifier lparen arg_list? rparen
+  cond_expr
+    = spacing add_expr (add_expr_op add_expr)* > fold_left
 
-  arg_list
-    = (expression ("," spacing expression)*)
+  add_expr
+    = spacing mult_expr (mult_expr_op mult_expr)* > fold_left
 
-  params_list
-    = (identifier ("," spacing identifier)*)
+  mult_expr
+    = primary_expr
 
-  term
-    = exponent (factor_op exponent)* > fold_left
-
-  exponent
-    = (factor exponent_op)* factor > fold_right
-
-  factor
+  primary_expr
     = call > call_expr
     / number > number_expr
     / assignment_expression > assign_expr
     / identifier > variable_expr
     / lparen expression rparen
 
-  term_op
-    = add_op > add_bin_op
-    / sub_op > sub_bin_op
+    call
+      = identifier lparen arg_list? rparen
 
-  factor_op
-    = mul_op > mul_bin_op
-    / div_op > div_bin_op
+    arg_list
+     = (expression ("," spacing expression)*)
 
-  exponent_op = exp_op > exp_bin_op
+    params_list
+      = (identifier ("," spacing identifier)*)
+
+    add_expr_op
+        = add_op > add_bin_op
+        / sub_op > sub_bin_op
+
+    mult_expr_op
+        = mul_op > mul_bin_op
+        / div_op > div_bin_op
+
+    cond_expr_op
+       = lt_op > lt_bin_op /
+       lte_op > lte_bin_op /
+       gt_op > gt_bin_op /
+       gte_op > gte_bin_op /
+       ne_op > ne_bin_op /
+       eq_op > eq_bin_op /
+       andand_op > and_bin_op /
+       oror_op > or_bin_op
 
   identifier = !digit !keyword ident_char+ spacing > to_string
   ident_char = ["a-zA-Z0-9_"]
@@ -113,7 +124,14 @@ grammar! awesome {
   sub_op = "-" spacing
   mul_op = "*" spacing
   div_op = "/" spacing
-  exp_op = "^" spacing
+  lt_op = "<" spacing
+  lte_op = "<=" spacing
+  gt_op = ">" spacing
+  gte_op = ">=" spacing
+  ne_op = "!=" spacing
+  eq_op = "==" spacing
+  andand_op  = "&&" spacing
+  oror_op = "||" spacing
   lparen = "(" spacing
   rparen = ")" spacing
   lbracket = "{"
@@ -142,7 +160,7 @@ grammar! awesome {
 
   #[derive(Debug)]
   pub enum BinOp {
-    Add, Sub, Mul, Div, Exp
+    Add, Sub, Mul, Div, Lt, Lte, Gt, Gte, Ne, Eq, And, Or
   }
 
   fn to_number(raw_text: Vec<char>) -> u32 {
@@ -175,7 +193,14 @@ grammar! awesome {
   fn sub_bin_op() -> BinOp { Sub }
   fn mul_bin_op() -> BinOp { Mul }
   fn div_bin_op() -> BinOp { Div }
-  fn exp_bin_op() -> BinOp { Exp }
+  fn lt_bin_op() -> BinOp { Lt }
+  fn lte_bin_op() -> BinOp { Lte }
+  fn gt_bin_op() -> BinOp { Gt }
+  fn gte_bin_op() -> BinOp { Gte }
+  fn ne_bin_op() -> BinOp { Ne }
+  fn eq_bin_op() -> BinOp { Eq }
+  fn and_bin_op() -> BinOp { And }
+  fn or_bin_op() -> BinOp { Or }
 
   fn call_expr(method: String, args: Option<(PExpr, Vec<PExpr>)>) -> PExpr {
       Box::new(Call(method, args))
@@ -203,23 +228,22 @@ grammar! awesome {
 }
 
 fn analyse_state(state: ParseState<StrStream, awesome::PExpr>) {
-  match state.into_result() {
-    Ok((success, error)) => {
-      if success.partial_read() {
-        println!("Partial match: {:?} because: {}", success.data, error);
-      }
-      else {
-        println!("Full match: {:?}", success.data);
-      }
+    match state.into_result() {
+        Ok((success, error)) => {
+            if success.partial_read() {
+                println!("Partial match: {:?} because: {}", success.data, error);
+            } else {
+                println!("Full match: {:?}", success.data);
+            }
+        }
+        Err(error) => {
+            println!("Error: {}", error);
+        }
     }
-    Err(error) => {
-      println!("Error: {}", error);
-    }
-  }
 }
 
 fn main() {
-  let program1 = "def foo(a, b) { if 1 { 1 + 1 } }";
-  println!("{:?}", awesome::parse_program(program1.stream()));
-  //analyse_state(awesome::parse_program(program1.stream()));
+    let program1 = "if a > 3 { a = 1 + (2 + 2) }";
+    println!("{:?}", awesome::parse_program(program1.stream()));
+    // analyse_state(awesome::parse_program(program1.stream()));
 }
