@@ -2,6 +2,16 @@ class Awesome {
   def does_it_work() {
     "yeah!"
   }
+
+  def count_to(n) {
+    i = 0
+
+    while i < n {
+      print(i)
+
+      i = i + 1
+    }
+  }
 }
 
 awesome_object = Awesome.new()
