@@ -4,10 +4,10 @@ class Awesome {
   }
 }
 
-awesome_object = Awesome.new
+awesome_object = Awesome.new()
 if awesome_object {
   print("awesome_object.does_it_work = ")
-  print(awesome_object.does_it_work)
+  print(awesome_object.does_it_work())
 }
 
-awesome_object = Awesome.new
+awesome_object = Awesome.new()
