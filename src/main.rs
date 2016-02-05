@@ -56,10 +56,10 @@ grammar! awesome {
         = primary_expr
 
     primary_expr
-        = call > call_expr
+        = assign_expr > to_assign_expr
+        / call > call_expr
         / string > string_expr
         / number > number_expr
-        / assign_expr > to_assign_expr
         / ident > variable_expr
         / lparen expr rparen
 
