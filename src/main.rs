@@ -22,20 +22,20 @@ grammar! awesome {
         = kw_class spacing ident class_body
 
     class_body
-        = lbracket spacing method_decl* rbracket
+        = lbracket method_decl* rbracket
 
     method_decl
         = kw_def spacing ident lparen params_list? rparen block
 
     block
-        = lbracket spacing (stmt / expr)* rbracket
+        = lbracket (stmt / expr)* rbracket
 
     stmt
         = if_stmt > to_if_stmt
         / while_stmt > to_while_stmt
 
     if_stmt
-        = kw_if expr block
+        = kw_if expr block (kw_else block)?
 
     while_stmt
         = kw_while expr block
@@ -107,12 +107,14 @@ grammar! awesome {
     kw_false = "false"
     kw_nil = "nil"
     kw_if = "if"
+    kw_else = "else"
     kw_while = "while"
     kw_tail = !ident_char spacing
 
     keyword
         = kw_def
         / kw_if
+        / kw_else
         / kw_class
         / kw_true
         / kw_false
@@ -135,8 +137,8 @@ grammar! awesome {
 
     lparen = "(" spacing
     rparen = ")" spacing
-    lbracket = "{" spacing
-    rbracket = "}" spacing
+    lbracket = spacing "{" spacing
+    rbracket = spacing "}" spacing
     dbl_quot = "\""
     sng_quot = "'"
 
@@ -158,7 +160,7 @@ grammar! awesome {
         AssingExpr(String, PExpr),
         MethodDecl(String, Option<(String, Vec<String>)>, Vec<PExpr>),
         ClassDecl(String, Vec<(String, Option<(String, Vec<String>)>, Vec<PExpr>)>),
-        IfStatement(PExpr, Vec<PExpr>),
+        IfStatement(PExpr, Vec<PExpr>, Option<Vec<PExpr>>),
         WhileStatement(PExpr, Vec<PExpr>),
         Block(Vec<PExpr>)
     }
@@ -227,8 +229,8 @@ grammar! awesome {
         Box::new(MethodDecl(name, params, body))
     }
 
-    fn to_if_stmt(condition: PExpr, block: Vec<PExpr>) -> PExpr {
-        Box::new(IfStatement(condition, block))
+    fn to_if_stmt(condition: PExpr, block: Vec<PExpr>, else_block: Option<Vec<PExpr>>) -> PExpr {
+        Box::new(IfStatement(condition, block, else_block))
     }
 
     fn to_while_stmt(condition: PExpr,  block: Vec<PExpr>) -> PExpr {
