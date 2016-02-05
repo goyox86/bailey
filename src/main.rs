@@ -4,21 +4,15 @@
 extern crate oak_runtime;
 use oak_runtime::*;
 
+use std::io::prelude::*;
+use std::fs::File;
+use std::io::BufReader;
+
 grammar! awesome {
     #![show_api]
 
-    program = decl_list /
-            stmt_list /
-            expr_list
-
-    decl_list
-        = decl (terminator decl)*
-
-    expr_list
-        = expr (terminator expr)*
-
-    stmt_list
-        = stmt (terminator stmt)*
+    program
+        = (expr / decl / stmt)*
 
     decl
         = class_decl > to_class_decl
@@ -34,7 +28,7 @@ grammar! awesome {
         = kw_def spacing ident lparen params_list? rparen block
 
     block
-        = lbracket spacing (stmt / expr)+ spacing rbracket
+        = lbracket spacing (stmt / expr)* rbracket
 
     stmt
         = if_stmt > to_if_stmt
@@ -53,23 +47,24 @@ grammar! awesome {
         = spacing cond_expr (cond_expr_op cond_expr)* > fold_left
 
     cond_expr
-        = spacing add_expr (add_expr_op add_expr)* > fold_left
+        = add_expr (add_expr_op add_expr)* > fold_left
 
     add_expr
-        = spacing mult_expr (mult_expr_op mult_expr)* > fold_left
+        = mult_expr (mult_expr_op mult_expr)* > fold_left
 
     mult_expr
         = primary_expr
 
     primary_expr
         = call > call_expr
+        / string > string_expr
         / number > number_expr
         / assign_expr > to_assign_expr
         / ident > variable_expr
         / lparen expr rparen
 
     call
-        = ident lparen arg_list? rparen
+        = (ident ".")? ident lparen arg_list? rparen
 
     arg_list
         = (expr ("," spacing expr)*)
@@ -97,10 +92,14 @@ grammar! awesome {
 
     ident = !digit !keyword ident_char+ spacing > to_string
     ident_char = ["a-zA-Z0-9_"]
+    sym_char = ["!@#$%^&*()-=_+[]\\{}|;:,./<>? \n\r\t"]
 
     digit = ["0-9"]
     number = digit+ spacing > to_number
-    spacing = [" \r\t"]* -> ()
+    string = (dbl_quot_string / sng_quot_string) spacing
+    dbl_quot_string = dbl_quot (ident_char / digit / sym_char)* dbl_quot
+    sng_quot_string = sng_quot (ident_char / digit / sym_char)* sng_quot
+    spacing = [" \n\r\t"]* -> ()
 
     kw_def = "def"
     kw_class = "class"
@@ -113,6 +112,7 @@ grammar! awesome {
 
     keyword
         = kw_def
+        / kw_if
         / kw_class
         / kw_true
         / kw_false
@@ -132,12 +132,15 @@ grammar! awesome {
     eq_op = "==" spacing
     andand_op  = "&&" spacing
     oror_op = "||" spacing
+
     lparen = "(" spacing
     rparen = ")" spacing
     lbracket = "{" spacing
     rbracket = "}" spacing
+    dbl_quot = "\""
+    sng_quot = "'"
 
-    terminator = ";" / "\n"
+    terminator = (";" / "\n") spacing
 
     use std::str::FromStr;
     use self::Expression::*;
@@ -147,46 +150,52 @@ grammar! awesome {
 
     #[derive(Debug)]
     pub enum Expression {
-    Variable(String),
-    Number(u32),
-    BinaryExpr(BinOp, PExpr, PExpr),
-    Call(String, Option<(PExpr, Vec<PExpr>)>),
-    AssingExpr(String, PExpr),
-    ClassDecl(String),
-    MethodDecl(String, Option<(String, Vec<String>)>, Vec<PExpr>),
-    IfStatement(PExpr, Vec<PExpr>),
-    WhileStatement(PExpr, Vec<PExpr>)
+        Variable(String),
+        NumberLiteral(u32),
+        StringLiteral(String),
+        BinaryExpr(BinOp, PExpr, PExpr),
+        Call(Option<String>, String, Option<(PExpr, Vec<PExpr>)>),
+        AssingExpr(String, PExpr),
+        MethodDecl(String, Option<(String, Vec<String>)>, Vec<PExpr>),
+        ClassDecl(String, Vec<(String, Option<(String, Vec<String>)>, Vec<PExpr>)>),
+        IfStatement(PExpr, Vec<PExpr>),
+        WhileStatement(PExpr, Vec<PExpr>),
+        Block(Vec<PExpr>)
     }
 
     #[derive(Debug)]
     pub enum BinOp {
-    Add, Sub, Mul, Div, Lt, Lte, Gt, Gte, Ne, Eq, And, Or
+        Add, Sub, Mul, Div, Lt, Lte, Gt, Gte, Ne, Eq, And, Or
     }
 
     fn to_number(raw_text: Vec<char>) -> u32 {
-    u32::from_str(&*to_string(raw_text)).unwrap()
+        u32::from_str(&*to_string(raw_text)).unwrap()
     }
 
     fn number_expr(value: u32) -> PExpr {
-    Box::new(Number(value))
+        Box::new(NumberLiteral(value))
+    }
+
+    fn string_expr(raw_text: Vec<char>) -> PExpr {
+        Box::new(StringLiteral(to_string(raw_text)))
     }
 
     fn variable_expr(ident: String) -> PExpr {
-    Box::new(Variable(ident))
+        Box::new(Variable(ident))
     }
 
     fn to_string(raw_text: Vec<char>) -> String {
-    raw_text.into_iter().collect()
+        raw_text.into_iter().collect()
     }
 
     fn fold_left(head: PExpr, rest: Vec<(BinOp, PExpr)>) -> PExpr {
-    rest.into_iter().fold(head,
-      |accu, (op, expr)| Box::new(BinaryExpr(op, accu, expr)))
+        rest.into_iter().fold(head,
+          |accu, (op, expr)| Box::new(BinaryExpr(op, accu, expr)))
     }
 
     fn fold_right(front: Vec<(PExpr, BinOp)>, last: PExpr) -> PExpr {
-    front.into_iter().rev().fold(last,
-      |accu, (expr, op)| Box::new(BinaryExpr(op, expr, accu)))
+        front.into_iter().rev().fold(last,
+          |accu, (expr, op)| Box::new(BinaryExpr(op, expr, accu)))
     }
 
     fn add_bin_op() -> BinOp { Add }
@@ -202,24 +211,24 @@ grammar! awesome {
     fn and_bin_op() -> BinOp { And }
     fn or_bin_op() -> BinOp { Or }
 
-    fn call_expr(method: String, args: Option<(PExpr, Vec<PExpr>)>) -> PExpr {
-      Box::new(Call(method, args))
+    fn call_expr(receiver: Option<String>, method: String, args: Option<(PExpr, Vec<PExpr>)>) -> PExpr {
+        Box::new(Call(receiver, method, args))
     }
 
     fn to_assign_expr(variable: String, exp: PExpr) -> PExpr {
-      Box::new(AssingExpr(variable, exp))
+        Box::new(AssingExpr(variable, exp))
     }
 
-    fn to_class_decl(foo: String, bar: Vec<(String, Option<(String, Vec<String>)>, Vec<PExpr>)>) -> PExpr {
-      Box::new(ClassDecl(foo))
+    fn to_class_decl(name: String, methods: Vec<(String, Option<(String, Vec<String>)>, Vec<PExpr>)>) -> PExpr {
+        Box::new(ClassDecl(name, methods))
     }
 
     fn to_method_decl(name: String, params: Option<(String, Vec<String>)>, body: Vec<PExpr>) -> PExpr {
-      Box::new(MethodDecl(name, params, body))
+        Box::new(MethodDecl(name, params, body))
     }
 
     fn to_if_stmt(condition: PExpr, block: Vec<PExpr>) -> PExpr {
-      Box::new(IfStatement(condition, block))
+        Box::new(IfStatement(condition, block))
     }
 
     fn to_while_stmt(condition: PExpr,  block: Vec<PExpr>) -> PExpr {
@@ -243,7 +252,9 @@ fn analyse_state(state: ParseState<StrStream, awesome::PExpr>) {
 }
 
 fn main() {
-    let program1 = "if a > 3 { a = 1 + (2 + 2) }";
-    println!("{:?}", awesome::parse_program(program1.stream()));
-    // analyse_state(awesome::parse_program(program1.stream()));
+    let f = File::open("./src/example.awm").ok().expect("failed to open file");
+    let mut reader = BufReader::new(f);
+    let mut contents = String::new();
+    reader.read_to_string(&mut contents);
+    println!("{:?}", awesome::parse_program(contents.stream()));
 }

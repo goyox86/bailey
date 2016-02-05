@@ -1,5 +1,5 @@
 class Awesome {
-  def does_it_work {
+  def does_it_work() {
     "yeah!"
   }
 }
