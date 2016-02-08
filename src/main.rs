@@ -15,8 +15,8 @@ grammar! awesome {
         = (expr / decl / stmt)*
 
     decl
-        = class_decl > to_class_decl
-        / method_decl > to_method_decl
+        = class_decl > class_decl
+        / method_decl > method_decl
 
     class_decl
         = kw_class spacing ident class_body
@@ -31,8 +31,8 @@ grammar! awesome {
         = lbracket (stmt / expr)* rbracket
 
     stmt
-        = if_stmt > to_if_stmt
-        / while_stmt > to_while_stmt
+        = if_stmt > if_stmt
+        / while_stmt > while_stmt
 
     if_stmt
         = kw_if expr block (kw_else block)?
@@ -55,7 +55,7 @@ grammar! awesome {
         = primary_expr (mult_expr_op primary_expr)* > fold_left
 
     primary_expr
-        = assign_expr > to_assign_expr
+        = assign_expr > assign_expr
         / call > call_expr
         / string > string_expr
         / number > number_expr
@@ -216,39 +216,24 @@ grammar! awesome {
         Box::new(Call(receiver, method, args))
     }
 
-    fn to_assign_expr(variable: String, exp: PExpr) -> PExpr {
+    fn assign_expr(variable: String, exp: PExpr) -> PExpr {
         Box::new(AssingExpr(variable, exp))
     }
 
-    fn to_class_decl(name: String, methods: Vec<(String, Option<(String, Vec<String>)>, Vec<PExpr>)>) -> PExpr {
+    fn class_decl(name: String, methods: Vec<(String, Option<(String, Vec<String>)>, Vec<PExpr>)>) -> PExpr {
         Box::new(ClassDecl(name, methods))
     }
 
-    fn to_method_decl(name: String, params: Option<(String, Vec<String>)>, body: Vec<PExpr>) -> PExpr {
+    fn method_decl(name: String, params: Option<(String, Vec<String>)>, body: Vec<PExpr>) -> PExpr {
         Box::new(MethodDecl(name, params, body))
     }
 
-    fn to_if_stmt(condition: PExpr, block: Vec<PExpr>, else_block: Option<Vec<PExpr>>) -> PExpr {
+    fn if_stmt(condition: PExpr, block: Vec<PExpr>, else_block: Option<Vec<PExpr>>) -> PExpr {
         Box::new(IfStatement(condition, block, else_block))
     }
 
-    fn to_while_stmt(condition: PExpr,  block: Vec<PExpr>) -> PExpr {
+    fn while_stmt(condition: PExpr,  block: Vec<PExpr>) -> PExpr {
       Box::new(WhileStatement(condition, block))
-    }
-}
-
-fn analyse_state(state: ParseState<StrStream, awesome::PExpr>) {
-    match state.into_result() {
-        Ok((success, error)) => {
-            if success.partial_read() {
-                println!("Partial match: {:?} because: {}", success.data, error);
-            } else {
-                println!("Full match: {:?}", success.data);
-            }
-        }
-        Err(error) => {
-            println!("Error: {}", error);
-        }
     }
 }
 
