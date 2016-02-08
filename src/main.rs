@@ -43,17 +43,16 @@ grammar! awesome {
     assign_expr
         = ident bind_op expr
 
-    expr
-        = spacing cond_expr (cond_expr_op cond_expr)* > fold_left
+    expr = cond_expr
 
     cond_expr
-        = add_expr (add_expr_op add_expr)* > fold_left
+        = spacing add_expr (cond_expr_op add_expr)* > fold_left
 
     add_expr
-        = mult_expr (mult_expr_op mult_expr)* > fold_left
+        = mult_expr (add_expr_op mult_expr)* > fold_left
 
     mult_expr
-        = primary_expr
+        = primary_expr (mult_expr_op primary_expr)* > fold_left
 
     primary_expr
         = assign_expr > to_assign_expr
