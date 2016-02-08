@@ -25,7 +25,7 @@ grammar! awesome {
         = lbracket method_decl* rbracket
 
     method_decl
-        = kw_def spacing ident lparen params_list? rparen block
+        = kw_def spacing ident lparen param_list? rparen block
 
     block
         = lbracket (stmt / expr)* rbracket
@@ -68,7 +68,7 @@ grammar! awesome {
     arg_list
         = (expr ("," spacing expr)*)
 
-    params_list
+    param_list
         = (ident ("," spacing ident)*)
 
     add_expr_op
