@@ -170,22 +170,6 @@ grammar! awesome {
         raw_text.into_iter().collect()
     }
 
-    fn fold_left(head: PExpr, rest: Vec<(BinOp, PExpr)>) -> PExpr {
-        rest.into_iter().fold(head,
-          |accu, (op, expr)| Box::new(BinaryExpr(op, accu, expr)))
-    }
-
-    fn fold_right(front: Vec<(PExpr, BinOp)>, last: PExpr) -> PExpr {
-        front.into_iter().rev().fold(last,
-          |accu, (expr, op)| Box::new(BinaryExpr(op, expr, accu)))
-    }
-
-    fn combine<T: Clone>(left: Vec<T>, right: Vec<T>) -> Vec<T> {
-        let mut result = left.clone();
-        result.extend(right.into_iter());
-        result
-    }
-
     fn add_bin_op() -> BinOp { Add }
     fn sub_bin_op() -> BinOp { Sub }
     fn mul_bin_op() -> BinOp { Mul }
@@ -221,6 +205,22 @@ grammar! awesome {
 
     fn while_stmt(condition: PExpr,  block: Vec<(PExpr, Option<()>)>) -> PExpr {
       Box::new(WhileStatement(condition, block))
+    }
+
+    fn fold_left(head: PExpr, rest: Vec<(BinOp, PExpr)>) -> PExpr {
+        rest.into_iter().fold(head,
+          |accu, (op, expr)| Box::new(BinaryExpr(op, accu, expr)))
+    }
+
+    fn fold_right(front: Vec<(PExpr, BinOp)>, last: PExpr) -> PExpr {
+        front.into_iter().rev().fold(last,
+          |accu, (expr, op)| Box::new(BinaryExpr(op, expr, accu)))
+    }
+
+    fn combine<T: Clone>(left: Vec<T>, right: Vec<T>) -> Vec<T> {
+        let mut result = left.clone();
+        result.extend(right.into_iter());
+        result
     }
 
     use std::str::FromStr;
