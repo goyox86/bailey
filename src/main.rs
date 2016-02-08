@@ -43,6 +43,9 @@ grammar! awesome {
     assign_expr
         = ident bind_op expr
 
+    call
+        = (receiver_expr ".")? ident lparen arg_list? rparen
+
     expr = cond_expr
 
     cond_expr
@@ -54,17 +57,17 @@ grammar! awesome {
     mult_expr
         = primary_expr (mult_expr_op primary_expr)* > fold_left
 
-    primary_expr
+    receiver_expr
         = assign_expr > assign_expr
-        / call > call_expr
         / string > string_expr
         / number > number_expr
-        / ident > variable_expr
         / constant
+        / ident > variable_expr
         / lparen expr rparen
 
-    call
-        = (ident ".")? ident lparen arg_list? rparen
+    primary_expr
+        = call > call_expr
+          / receiver_expr
 
     arg_list
         = (expr ("," spacing expr)*)
@@ -196,7 +199,7 @@ grammar! awesome {
     fn and_bin_op() -> BinOp { And }
     fn or_bin_op() -> BinOp { Or }
 
-    fn call_expr(receiver: Option<String>, method: String, args: Option<(PExpr, Vec<PExpr>)>) -> PExpr {
+    fn call_expr(receiver: Option<PExpr>, method: String, args: Option<(PExpr, Vec<PExpr>)>) -> PExpr {
         Box::new(Call(receiver, method, args))
     }
 
@@ -233,7 +236,7 @@ grammar! awesome {
         NumberLiteral(u32),
         StringLiteral(String),
         BinaryExpr(BinOp, PExpr, PExpr),
-        Call(Option<String>, String, Option<(PExpr, Vec<PExpr>)>),
+        Call(Option<PExpr>, String, Option<(PExpr, Vec<PExpr>)>),
         AssingExpr(String, PExpr),
         MethodDecl(String, Option<(String, Vec<String>)>, Vec<(PExpr, Option<()>)>),
         ClassDecl(PExpr, Vec<(String, Option<(String, Vec<String>)>, Vec<(PExpr, Option<()>)>)>),
