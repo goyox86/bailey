@@ -12,7 +12,7 @@ grammar! awesome {
     #![show_api]
 
     program
-        = (expr / decl / stmt)*
+        = ((expr / decl / stmt) terminator?)*
 
     decl
         = class_decl > class_decl
@@ -28,7 +28,7 @@ grammar! awesome {
         = kw_def spacing ident lparen param_list? rparen block
 
     block
-        = lbracket (stmt / expr)* rbracket
+        = lbracket ((stmt / expr) terminator?)* rbracket
 
     stmt
         = if_stmt > if_stmt
@@ -141,7 +141,7 @@ grammar! awesome {
     dbl_quot = "\""
     sng_quot = "'"
 
-    terminator = (";" / "\n") spacing
+    terminator = ";" spacing
 
     use std::str::FromStr;
     use self::Expression::*;
@@ -157,10 +157,10 @@ grammar! awesome {
         BinaryExpr(BinOp, PExpr, PExpr),
         Call(Option<String>, String, Option<(PExpr, Vec<PExpr>)>),
         AssingExpr(String, PExpr),
-        MethodDecl(String, Option<(String, Vec<String>)>, Vec<PExpr>),
-        ClassDecl(String, Vec<(String, Option<(String, Vec<String>)>, Vec<PExpr>)>),
-        IfStatement(PExpr, Vec<PExpr>, Option<Vec<PExpr>>),
-        WhileStatement(PExpr, Vec<PExpr>),
+        MethodDecl(String, Option<(String, Vec<String>)>, Vec<(PExpr, Option<()>)>),
+        ClassDecl(String, Vec<(String, Option<(String, Vec<String>)>, Vec<(PExpr, Option<()>)>)>),
+        IfStatement(PExpr, Vec<(PExpr, Option<()>)>, Option<Vec<(PExpr, Option<()>)>>),
+        WhileStatement(PExpr, Vec<(PExpr, Option<()>)>),
         Block(Vec<PExpr>)
     }
 
@@ -220,19 +220,19 @@ grammar! awesome {
         Box::new(AssingExpr(variable, exp))
     }
 
-    fn class_decl(name: String, methods: Vec<(String, Option<(String, Vec<String>)>, Vec<PExpr>)>) -> PExpr {
+    fn class_decl(name: String, methods: Vec<(String, Option<(String, Vec<String>)>, Vec<(PExpr, Option<()>)>)>) -> PExpr {
         Box::new(ClassDecl(name, methods))
     }
 
-    fn method_decl(name: String, params: Option<(String, Vec<String>)>, body: Vec<PExpr>) -> PExpr {
+    fn method_decl(name: String, params: Option<(String, Vec<String>)>, body: Vec<(PExpr, Option<()>)>) -> PExpr {
         Box::new(MethodDecl(name, params, body))
     }
 
-    fn if_stmt(condition: PExpr, block: Vec<PExpr>, else_block: Option<Vec<PExpr>>) -> PExpr {
+    fn if_stmt(condition: PExpr, block: Vec<(PExpr, Option<()>)>, else_block: Option<Vec<(PExpr, Option<()>)>>) -> PExpr {
         Box::new(IfStatement(condition, block, else_block))
     }
 
-    fn while_stmt(condition: PExpr,  block: Vec<PExpr>) -> PExpr {
+    fn while_stmt(condition: PExpr,  block: Vec<(PExpr, Option<()>)>) -> PExpr {
       Box::new(WhileStatement(condition, block))
     }
 }
