@@ -19,7 +19,7 @@ grammar! awesome {
         / method_decl > method_decl
 
     class_decl
-        = kw_class spacing ident class_body
+        = kw_class spacing constant class_body
 
     class_body
         = lbracket method_decl* rbracket
@@ -60,6 +60,7 @@ grammar! awesome {
         / string > string_expr
         / number > number_expr
         / ident > variable_expr
+        / constant
         / lparen expr rparen
 
     call
@@ -71,11 +72,12 @@ grammar! awesome {
     param_list
         = (ident ("," spacing ident)*)
 
-    ident = !digit !keyword ident_char+ spacing > to_string
-    ident_char = ["a-zA-Z0-9_"]
+    digit = ["0-9"]
+    ident_char = ["A-Za-z0-9_"]
     sym_char = ["!@#$%^&*()-=_+[]\\{}|;:,./<>? \n\r\t"]
 
-    digit = ["0-9"]
+    ident = !digit !keyword ident_char+ spacing > to_string
+    constant = !keyword ["A-Z"]+ ident_char+ spacing > to_constant
     number = digit+ spacing > to_number
     string = (dbl_quot_string / sng_quot_string) spacing
     dbl_quot_string = dbl_quot (ident_char / digit / sym_char)* dbl_quot
@@ -141,32 +143,6 @@ grammar! awesome {
 
     terminator = ";" spacing
 
-    use std::str::FromStr;
-    use self::Expression::*;
-    use self::BinOp::*;
-
-    pub type PExpr = Box<Expression>;
-
-    #[derive(Debug)]
-    pub enum Expression {
-        Variable(String),
-        NumberLiteral(u32),
-        StringLiteral(String),
-        BinaryExpr(BinOp, PExpr, PExpr),
-        Call(Option<String>, String, Option<(PExpr, Vec<PExpr>)>),
-        AssingExpr(String, PExpr),
-        MethodDecl(String, Option<(String, Vec<String>)>, Vec<(PExpr, Option<()>)>),
-        ClassDecl(String, Vec<(String, Option<(String, Vec<String>)>, Vec<(PExpr, Option<()>)>)>),
-        IfStatement(PExpr, Vec<(PExpr, Option<()>)>, Option<Vec<(PExpr, Option<()>)>>),
-        WhileStatement(PExpr, Vec<(PExpr, Option<()>)>),
-        Block(Vec<PExpr>)
-    }
-
-    #[derive(Debug)]
-    pub enum BinOp {
-        Add, Sub, Mul, Div, Lt, Lte, Gt, Gte, Ne, Eq, And, Or
-    }
-
     fn to_number(raw_text: Vec<char>) -> u32 {
         u32::from_str(&*to_string(raw_text)).unwrap()
     }
@@ -177,6 +153,10 @@ grammar! awesome {
 
     fn string_expr(raw_text: Vec<char>) -> PExpr {
         Box::new(StringLiteral(to_string(raw_text)))
+    }
+
+    fn to_constant(first: Vec<char>, rest: Vec<char>) -> PExpr {
+        Box::new(Constant(to_string(combine(first, rest))))
     }
 
     fn variable_expr(ident: String) -> PExpr {
@@ -195,6 +175,12 @@ grammar! awesome {
     fn fold_right(front: Vec<(PExpr, BinOp)>, last: PExpr) -> PExpr {
         front.into_iter().rev().fold(last,
           |accu, (expr, op)| Box::new(BinaryExpr(op, expr, accu)))
+    }
+
+    fn combine<T: Clone>(left: Vec<T>, right: Vec<T>) -> Vec<T> {
+        let mut result = left.clone();
+        result.extend(right.into_iter());
+        result
     }
 
     fn add_bin_op() -> BinOp { Add }
@@ -218,8 +204,8 @@ grammar! awesome {
         Box::new(AssingExpr(variable, exp))
     }
 
-    fn class_decl(name: String, methods: Vec<(String, Option<(String, Vec<String>)>, Vec<(PExpr, Option<()>)>)>) -> PExpr {
-        Box::new(ClassDecl(name, methods))
+    fn class_decl(class: PExpr, methods: Vec<(String, Option<(String, Vec<String>)>, Vec<(PExpr, Option<()>)>)>) -> PExpr {
+        Box::new(ClassDecl(class, methods))
     }
 
     fn method_decl(name: String, params: Option<(String, Vec<String>)>, body: Vec<(PExpr, Option<()>)>) -> PExpr {
@@ -232,6 +218,33 @@ grammar! awesome {
 
     fn while_stmt(condition: PExpr,  block: Vec<(PExpr, Option<()>)>) -> PExpr {
       Box::new(WhileStatement(condition, block))
+    }
+
+    use std::str::FromStr;
+    use self::Expression::*;
+    use self::BinOp::*;
+
+    pub type PExpr = Box<Expression>;
+
+    #[derive(Debug)]
+    pub enum Expression {
+        Variable(String),
+        Constant(String),
+        NumberLiteral(u32),
+        StringLiteral(String),
+        BinaryExpr(BinOp, PExpr, PExpr),
+        Call(Option<String>, String, Option<(PExpr, Vec<PExpr>)>),
+        AssingExpr(String, PExpr),
+        MethodDecl(String, Option<(String, Vec<String>)>, Vec<(PExpr, Option<()>)>),
+        ClassDecl(PExpr, Vec<(String, Option<(String, Vec<String>)>, Vec<(PExpr, Option<()>)>)>),
+        IfStatement(PExpr, Vec<(PExpr, Option<()>)>, Option<Vec<(PExpr, Option<()>)>>),
+        WhileStatement(PExpr, Vec<(PExpr, Option<()>)>),
+        Block(Vec<PExpr>)
+    }
+
+    #[derive(Debug)]
+    pub enum BinOp {
+        Add, Sub, Mul, Div, Lt, Lte, Gt, Gte, Ne, Eq, And, Or
     }
 }
 
