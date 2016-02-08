@@ -71,6 +71,35 @@ grammar! awesome {
     param_list
         = (ident ("," spacing ident)*)
 
+    ident = !digit !keyword ident_char+ spacing > to_string
+    ident_char = ["a-zA-Z0-9_"]
+    sym_char = ["!@#$%^&*()-=_+[]\\{}|;:,./<>? \n\r\t"]
+
+    digit = ["0-9"]
+    number = digit+ spacing > to_number
+    string = (dbl_quot_string / sng_quot_string) spacing
+    dbl_quot_string = dbl_quot (ident_char / digit / sym_char)* dbl_quot
+    sng_quot_string = sng_quot (ident_char / digit / sym_char)* sng_quot
+    spacing = [" \n\r\t"]* -> ()
+
+    kw_class = "class"
+    kw_def = "def"
+    kw_else = "else"
+    kw_false = "false"
+    kw_if = "if"
+    kw_nil = "nil"
+    kw_true = "true"
+    kw_while = "while"
+
+    keyword
+        = kw_def
+        / kw_if
+        / kw_else
+        / kw_class
+        / kw_true
+        / kw_false
+        / kw_nil
+
     add_expr_op
         = add_op > add_bin_op
         / sub_op > sub_bin_op
@@ -88,37 +117,6 @@ grammar! awesome {
         eq_op > eq_bin_op /
         andand_op > and_bin_op /
         oror_op > or_bin_op
-
-    ident = !digit !keyword ident_char+ spacing > to_string
-    ident_char = ["a-zA-Z0-9_"]
-    sym_char = ["!@#$%^&*()-=_+[]\\{}|;:,./<>? \n\r\t"]
-
-    digit = ["0-9"]
-    number = digit+ spacing > to_number
-    string = (dbl_quot_string / sng_quot_string) spacing
-    dbl_quot_string = dbl_quot (ident_char / digit / sym_char)* dbl_quot
-    sng_quot_string = sng_quot (ident_char / digit / sym_char)* sng_quot
-    spacing = [" \n\r\t"]* -> ()
-
-    kw_def = "def"
-    kw_class = "class"
-    kw_true = "true"
-    kw_false = "false"
-    kw_nil = "nil"
-    kw_if = "if"
-    kw_else = "else"
-    kw_while = "while"
-    kw_tail = !ident_char spacing
-
-    keyword
-        = kw_def
-        / kw_if
-        / kw_else
-        / kw_class
-        / kw_true
-        / kw_false
-        / kw_nil
-        / kw_tail
 
     bind_op = "=" spacing
     add_op = "+" spacing
