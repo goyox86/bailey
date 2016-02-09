@@ -75,7 +75,6 @@ grammar! awesome {
 
     digit = ["0-9"]
     ident_char = ["A-Za-z0-9_"]
-    sym_char = ["!@#$%^&*()-=_+[]\\{}|;:,./<>? \n\r\t"]
 
     ident = !digit !keyword ident_char+ spacing > to_string
     constant = !keyword !digit ["A-Z"]+ ident_char+ spacing > to_constant
