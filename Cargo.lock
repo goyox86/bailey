@@ -2,17 +2,17 @@
 name = "awesome_oak"
 version = "0.1.0"
 dependencies = [
- "oak 0.3.11 (git+https://github.com/ptal/oak.git)",
- "oak_runtime 0.3.6 (git+https://github.com/ptal/oak.git)",
+ "oak 0.3.12 (git+https://github.com/ptal/oak.git)",
+ "oak_runtime 0.3.7 (git+https://github.com/ptal/oak.git)",
 ]
 
 [[package]]
 name = "oak"
-version = "0.3.11"
-source = "git+https://github.com/ptal/oak.git#47eb75b20d0c1f6cb4b599896023f03ee45d1304"
+version = "0.3.12"
+source = "git+https://github.com/ptal/oak.git#f0bf59ff26b737bc5831e7d1398853eef30f2bbb"
 
 [[package]]
 name = "oak_runtime"
-version = "0.3.6"
-source = "git+https://github.com/ptal/oak.git#47eb75b20d0c1f6cb4b599896023f03ee45d1304"
+version = "0.3.7"
+source = "git+https://github.com/ptal/oak.git#f0bf59ff26b737bc5831e7d1398853eef30f2bbb"
 
