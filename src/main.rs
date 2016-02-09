@@ -17,13 +17,13 @@ grammar! awesome {
         / method_decl > method_decl
 
     class_decl
-        = kw_class spacing constant class_body
+        = kw_class constant class_body
 
     class_body
         = lbracket method_decl* rbracket
 
     method_decl
-        = kw_def spacing ident lparen param_list? rparen block
+        = kw_def ident lparen param_list? rparen block
 
     block
         = lbracket ((stmt / expr) terminator?)* rbracket
@@ -44,10 +44,10 @@ grammar! awesome {
     assign_expr
         = ident bind_op expr
 
-    expr = cond_expr
+    expr = spacing cond_expr
 
     cond_expr
-        = spacing add_expr (cond_expr_op add_expr)* > fold_left
+        = add_expr (cond_expr_op add_expr)* > fold_left
 
     add_expr
         = mult_expr (add_expr_op mult_expr)* > fold_left
@@ -78,21 +78,24 @@ grammar! awesome {
 
     ident = !digit !keyword ident_char+ spacing > to_string
     constant = !keyword !digit ["A-Z"]+ ident_char+ spacing > to_constant
+
     number = digit+ spacing > to_number
+
     string = (dbl_quot_string / sng_quot_string) spacing
     dbl_quot_string = dbl_quot (spacing_char / !dbl_quot .)* dbl_quot
     sng_quot_string = sng_quot (spacing_char / !sng_quot .)* sng_quot
+
     spacing_char = [" \n\r\t"]
     spacing = spacing_char* -> ()
 
-    kw_class = "class"
-    kw_def = "def"
-    kw_else = "else"
-    kw_false = "false"
-    kw_if = "if"
-    kw_nil = "nil"
-    kw_true = "true"
-    kw_while = "while"
+    kw_class = "class" spacing
+    kw_def = "def" spacing
+    kw_else = "else" spacing
+    kw_false = "false" spacing
+    kw_if = "if" spacing
+    kw_nil = "nil" spacing
+    kw_true = "true" spacing
+    kw_while = "while" spacing
 
     keyword
         = kw_def
