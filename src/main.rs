@@ -9,8 +9,6 @@ use std::fs::File;
 use std::io::BufReader;
 
 grammar! awesome {
-    #![show_api]
-
     program
         = ((expr / decl / stmt) terminator?)*
 
@@ -40,11 +38,11 @@ grammar! awesome {
     while_stmt
         = kw_while expr block
 
-    assign_expr
-        = ident bind_op expr
-
     call
         = (receiver_expr ".")? ident lparen arg_list? rparen
+
+    assign_expr
+        = ident bind_op expr
 
     expr = cond_expr
 
@@ -80,12 +78,13 @@ grammar! awesome {
     sym_char = ["!@#$%^&*()-=_+[]\\{}|;:,./<>? \n\r\t"]
 
     ident = !digit !keyword ident_char+ spacing > to_string
-    constant = !keyword ["A-Z"]+ ident_char+ spacing > to_constant
+    constant = !keyword !digit ["A-Z"]+ ident_char+ spacing > to_constant
     number = digit+ spacing > to_number
     string = (dbl_quot_string / sng_quot_string) spacing
-    dbl_quot_string = dbl_quot (ident_char / digit / sym_char)* dbl_quot
-    sng_quot_string = sng_quot (ident_char / digit / sym_char)* sng_quot
-    spacing = [" \n\r\t"]* -> ()
+    dbl_quot_string = dbl_quot (spacing_char / !dbl_quot .)* dbl_quot
+    sng_quot_string = sng_quot (spacing_char / !sng_quot .)* sng_quot
+    spacing_char = [" \n\r\t"]
+    spacing = spacing_char* -> ()
 
     kw_class = "class"
     kw_def = "def"
@@ -256,5 +255,5 @@ fn main() {
     let mut reader = BufReader::new(f);
     let mut contents = String::new();
     reader.read_to_string(&mut contents);
-    println!("{:?}", awesome::parse_program(contents.stream()));
+    println!("{:#?}", awesome::parse_program(contents.stream()));
 }
