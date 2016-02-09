@@ -140,8 +140,8 @@ grammar! awesome {
 
     lparen = "(" spacing
     rparen = ")" spacing
-    lbracket = spacing "{" spacing
-    rbracket = spacing "}" spacing
+    lbracket = "{" spacing
+    rbracket = "}" spacing
     dbl_quot = "\""
     sng_quot = "'"
 
