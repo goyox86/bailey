@@ -23,7 +23,7 @@ grammar! awesome {
         = lbracket method_decl* rbracket
 
     method_decl
-        = kw_def ident lparen param_list? rparen block
+        = kw_def identifier lparen param_list? rparen block
 
     block
         = lbracket ((stmt / expr) terminator?)* rbracket
@@ -39,12 +39,13 @@ grammar! awesome {
         = kw_while expr block
 
     call
-        = (receiver_expr ".")? ident lparen arg_list? rparen
+        = (receiver_expr ".")? identifier lparen arg_list? rparen
 
     assign_expr
-        = ident bind_op expr
+        = identifier bind_op expr > assign_expr
 
-    expr = spacing cond_expr
+    expr
+        = spacing cond_expr
 
     cond_expr
         = add_expr (cond_expr_op add_expr)* > fold_left
@@ -55,35 +56,35 @@ grammar! awesome {
     mult_expr
         = primary_expr (mult_expr_op primary_expr)* > fold_left
 
-    receiver_expr
-        = assign_expr > assign_expr
-        / string > string_expr
-        / number > number_expr
-        / constant
-        / ident > variable_expr
-        / lparen expr rparen
-
     primary_expr
         = call > call_expr
           / receiver_expr
+
+    receiver_expr
+        = assign_expr
+        / lit_string
+        / lit_int
+        / constant
+        / identifier
+        / lparen expr rparen
 
     arg_list
         = (expr ("," spacing expr)*)
 
     param_list
-        = (ident ("," spacing ident)*)
+        = (identifier ("," spacing identifier)*)
 
     digit = ["0-9"]
-    ident_char = ["A-Za-z0-9_"]
+    identifier_char = ["A-Za-z0-9_"]
 
-    ident = !digit !keyword ident_char+ spacing > to_string
-    constant = !keyword !digit ["A-Z"]+ ident_char+ spacing > to_constant
+    identifier = !digit !keyword identifier_char+ spacing > identifier
+    constant = !keyword !digit ["A-Z"]+ identifier_char+ spacing > constant
 
-    number = digit+ spacing > to_number
+    lit_int = digit+ spacing > lit_int
+    lit_string = (dbl_quot_lit_string / sng_quot_lit_string) spacing > lit_string
 
-    string = (dbl_quot_string / sng_quot_string) spacing
-    dbl_quot_string = dbl_quot (spacing_char / !dbl_quot .)* dbl_quot
-    sng_quot_string = sng_quot (spacing_char / !sng_quot .)* sng_quot
+    dbl_quot_lit_string = dbl_quot (spacing_char / !dbl_quot .)* dbl_quot
+    sng_quot_lit_string = sng_quot (spacing_char / !sng_quot .)* sng_quot
 
     spacing_char = [" \n\r\t"]
     spacing = spacing_char* -> ()
@@ -144,31 +145,22 @@ grammar! awesome {
     rbracket = "}" spacing
     dbl_quot = "\""
     sng_quot = "'"
-
     terminator = ";" spacing
 
-    fn to_number(raw_text: Vec<char>) -> u32 {
-        u32::from_str(&*to_string(raw_text)).unwrap()
+    fn lit_int(raw_text: Vec<char>) -> PExpr {
+        Box::new(IntegerLiteral(to_number(raw_text)))
     }
 
-    fn number_expr(value: u32) -> PExpr {
-        Box::new(NumberLiteral(value))
-    }
-
-    fn string_expr(raw_text: Vec<char>) -> PExpr {
+    fn lit_string(raw_text: Vec<char>) -> PExpr {
         Box::new(StringLiteral(to_string(raw_text)))
     }
 
-    fn to_constant(first: Vec<char>, rest: Vec<char>) -> PExpr {
+    fn constant(first: Vec<char>, rest: Vec<char>) -> PExpr {
         Box::new(Constant(to_string(combine(first, rest))))
     }
 
-    fn variable_expr(ident: String) -> PExpr {
-        Box::new(Variable(ident))
-    }
-
-    fn to_string(raw_text: Vec<char>) -> String {
-        raw_text.into_iter().collect()
+    fn identifier(raw_text: Vec<char>) -> PExpr {
+        Box::new(Identifier(to_string(raw_text)))
     }
 
     fn add_bin_op() -> BinOp { Add }
@@ -184,20 +176,20 @@ grammar! awesome {
     fn and_bin_op() -> BinOp { And }
     fn or_bin_op() -> BinOp { Or }
 
-    fn call_expr(receiver: Option<PExpr>, method: String, args: Option<(PExpr, Vec<PExpr>)>) -> PExpr {
+    fn call_expr(receiver: Option<PExpr>, method: PExpr, args: Option<(PExpr, Vec<PExpr>)>) -> PExpr {
         Box::new(Call(receiver, method, args))
     }
 
-    fn assign_expr(variable: String, exp: PExpr) -> PExpr {
-        Box::new(AssingExpr(variable, exp))
+    fn assign_expr(identifier: PExpr, expr: PExpr) -> PExpr {
+        Box::new(AssingExpr(identifier, expr))
     }
 
-    fn class_decl(class: PExpr, methods: Vec<(String, Option<(String, Vec<String>)>, Vec<(PExpr, Option<()>)>)>) -> PExpr {
+    fn class_decl(class: PExpr, methods: Vec<(PExpr, Option<(PExpr, Vec<PExpr>)>, Vec<(PExpr, Option<()>)>)>) -> PExpr {
         Box::new(ClassDecl(class, methods))
     }
 
-    fn method_decl(name: String, params: Option<(String, Vec<String>)>, body: Vec<(PExpr, Option<()>)>) -> PExpr {
-        Box::new(MethodDecl(name, params, body))
+    fn method_decl(identifier: PExpr, params: Option<(PExpr, Vec<PExpr>)>, body: Vec<(PExpr, Option<()>)>) -> PExpr {
+        Box::new(MethodDecl(identifier, params, body))
     }
 
     fn if_stmt(condition: PExpr, block: Vec<(PExpr, Option<()>)>, else_block: Option<Vec<(PExpr, Option<()>)>>) -> PExpr {
@@ -206,6 +198,14 @@ grammar! awesome {
 
     fn while_stmt(condition: PExpr,  block: Vec<(PExpr, Option<()>)>) -> PExpr {
       Box::new(WhileStatement(condition, block))
+    }
+
+    fn to_string(raw_text: Vec<char>) -> String {
+        raw_text.into_iter().collect()
+    }
+
+    fn to_number(raw_text: Vec<char>) -> u32 {
+        u32::from_str(&*to_string(raw_text)).unwrap()
     }
 
     fn fold_left(head: PExpr, rest: Vec<(BinOp, PExpr)>) -> PExpr {
@@ -232,15 +232,15 @@ grammar! awesome {
 
     #[derive(Debug)]
     pub enum Expression {
-        Variable(String),
+        Identifier(String),
         Constant(String),
-        NumberLiteral(u32),
+        IntegerLiteral(u32),
         StringLiteral(String),
         BinaryExpr(BinOp, PExpr, PExpr),
-        Call(Option<PExpr>, String, Option<(PExpr, Vec<PExpr>)>),
-        AssingExpr(String, PExpr),
-        MethodDecl(String, Option<(String, Vec<String>)>, Vec<(PExpr, Option<()>)>),
-        ClassDecl(PExpr, Vec<(String, Option<(String, Vec<String>)>, Vec<(PExpr, Option<()>)>)>),
+        Call(Option<PExpr>, PExpr, Option<(PExpr, Vec<PExpr>)>),
+        AssingExpr(PExpr, PExpr),
+        MethodDecl(PExpr, Option<(PExpr, Vec<PExpr>)>, Vec<(PExpr, Option<()>)>),
+        ClassDecl(PExpr, Vec<(PExpr, Option<(PExpr, Vec<PExpr>)>, Vec<(PExpr, Option<()>)>)>),
         IfStatement(PExpr, Vec<(PExpr, Option<()>)>, Option<Vec<(PExpr, Option<()>)>>),
         WhileStatement(PExpr, Vec<(PExpr, Option<()>)>),
         Block(Vec<PExpr>)
