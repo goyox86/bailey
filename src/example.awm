@@ -15,6 +15,7 @@ class Awesome {
 }
 
 awesome_object = Awesome.new()
+awesome_float = 10.2
 
 if awesome_object {
   print('awesome_object.does_it_work = ')
