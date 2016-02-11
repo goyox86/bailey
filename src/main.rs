@@ -57,7 +57,7 @@ grammar! awesome {
         = primary_expr (mult_expr_op primary_expr)* > fold_left
 
     primary_expr
-        = call > call_expr
+        = call > call
           / receiver_expr
 
     receiver_expr
@@ -188,7 +188,7 @@ grammar! awesome {
     fn and_bin_op() -> BinOp { And }
     fn or_bin_op() -> BinOp { Or }
 
-    fn call_expr(receiver: Option<PExpr>, method: PExpr, args: Option<(PExpr, Vec<PExpr>)>) -> PExpr {
+    fn call(receiver: Option<PExpr>, method: PExpr, args: Option<(PExpr, Vec<PExpr>)>) -> PExpr {
         Box::new(Call(receiver, method, args))
     }
 
