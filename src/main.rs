@@ -254,12 +254,12 @@ grammar! awesome {
         FloatLiteral(f32),
         StringLiteral(String),
         BinaryExpr(BinOp, PExpr, PExpr),
-        Call(Option<PExpr>, PExpr, Option<(PExpr, Vec<PExpr>)>),
         AssingExpr(PExpr, PExpr),
-        MethodDecl(PExpr, Option<(PExpr, Vec<PExpr>)>, Vec<(PExpr, Option<()>)>),
         ClassDecl(PExpr, Vec<(PExpr, Option<(PExpr, Vec<PExpr>)>, Vec<(PExpr, Option<()>)>)>),
         IfStatement(PExpr, Vec<(PExpr, Option<()>)>, Option<Vec<(PExpr, Option<()>)>>),
+        MethodDecl(PExpr, Option<(PExpr, Vec<PExpr>)>, Vec<(PExpr, Option<()>)>),
         WhileStatement(PExpr, Vec<(PExpr, Option<()>)>),
+        Call(Option<PExpr>, PExpr, Option<(PExpr, Vec<PExpr>)>),
         Block(Vec<PExpr>)
     }
 
