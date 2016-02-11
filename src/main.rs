@@ -62,8 +62,7 @@ grammar! awesome {
 
     receiver_expr
         = assign_expr
-        / lit_string
-        / lit_int
+        / literal
         / constant
         / identifier
         / lparen expr rparen
@@ -80,7 +79,13 @@ grammar! awesome {
     identifier = !digit !keyword identifier_char+ spacing > identifier
     constant = !keyword !digit ["A-Z"]+ identifier_char+ spacing > constant
 
+    literal
+        = lit_string
+        / lit_float
+        / lit_int
+
     lit_int = digit+ spacing > lit_int
+    lit_float = digit+ "." digit+ spacing > lit_float
     lit_string = (dbl_quot_lit_string / sng_quot_lit_string) spacing > lit_string
 
     dbl_quot_lit_string = dbl_quot (spacing_char / !dbl_quot .)* dbl_quot
@@ -151,6 +156,13 @@ grammar! awesome {
         Box::new(IntegerLiteral(to_number(raw_text)))
     }
 
+    // FIXME: Please remove this hacky wacky '.' thingy
+    fn lit_float(integer: Vec<char>, fractional: Vec<char>) -> PExpr {
+        let mut buf = integer;
+        buf.push('.');
+        Box::new(FloatLiteral(to_float(combine(buf, fractional))))
+    }
+
     fn lit_string(raw_text: Vec<char>) -> PExpr {
         Box::new(StringLiteral(to_string(raw_text)))
     }
@@ -208,6 +220,10 @@ grammar! awesome {
         u32::from_str(&*to_string(raw_text)).unwrap()
     }
 
+    fn to_float(raw_text: Vec<char>) -> f32 {
+        f32::from_str(&*to_string(raw_text)).unwrap()
+    }
+
     fn fold_left(head: PExpr, rest: Vec<(BinOp, PExpr)>) -> PExpr {
         rest.into_iter().fold(head,
           |accu, (op, expr)| Box::new(BinaryExpr(op, accu, expr)))
@@ -235,6 +251,7 @@ grammar! awesome {
         Identifier(String),
         Constant(String),
         IntegerLiteral(u32),
+        FloatLiteral(f32),
         StringLiteral(String),
         BinaryExpr(BinOp, PExpr, PExpr),
         Call(Option<PExpr>, PExpr, Option<(PExpr, Vec<PExpr>)>),
