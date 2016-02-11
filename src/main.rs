@@ -148,8 +148,8 @@ grammar! awesome {
     rparen = ")" spacing
     lbracket = "{" spacing
     rbracket = "}" spacing
-    dbl_quot = "\""
-    sng_quot = "'"
+    dbl_quot = "\"" spacing
+    sng_quot = "'" spacing
     terminator = ";" spacing
 
     fn lit_int(raw_text: Vec<char>) -> PExpr {
