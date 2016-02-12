@@ -14,7 +14,7 @@ grammar! awesome {
 
     decl
         = class_decl > class_decl
-        / method_decl > method_decl
+        / method_decl
 
     class_decl
         = kw_class constant class_body
@@ -23,7 +23,7 @@ grammar! awesome {
         = lbracket method_decl* rbracket
 
     method_decl
-        = kw_def identifier lparen param_list? rparen block
+        = kw_def identifier lparen param_list? rparen block > method_decl
 
     block
         = lbracket ((stmt / expr) terminator?)* rbracket
@@ -65,8 +65,8 @@ grammar! awesome {
           / receiver_expr
 
     receiver_expr
-        = literal
-        / call_no_receiver > call_no_receiver
+        = call_no_receiver > call_no_receiver
+        / literal
         / constant
         / identifier
         / lparen expr rparen
@@ -204,7 +204,7 @@ grammar! awesome {
         Box::new(AssingExpr(identifier, expr))
     }
 
-    fn class_decl(class: PExpr, methods: Vec<(PExpr, Option<(PExpr, Vec<PExpr>)>, Vec<(PExpr, Option<()>)>)>) -> PExpr {
+    fn class_decl(class: PExpr, methods: Vec<PExpr>) -> PExpr {
         Box::new(ClassDecl(class, methods))
     }
 
@@ -263,7 +263,7 @@ grammar! awesome {
         StringLiteral(String),
         BinaryExpr(BinOp, PExpr, PExpr),
         AssingExpr(PExpr, PExpr),
-        ClassDecl(PExpr, Vec<(PExpr, Option<(PExpr, Vec<PExpr>)>, Vec<(PExpr, Option<()>)>)>),
+        ClassDecl(PExpr, Vec<PExpr>),
         IfStatement(PExpr, Vec<(PExpr, Option<()>)>, Option<Vec<(PExpr, Option<()>)>>),
         MethodDecl(PExpr, Option<(PExpr, Vec<PExpr>)>, Vec<(PExpr, Option<()>)>),
         WhileStatement(PExpr, Vec<(PExpr, Option<()>)>),
