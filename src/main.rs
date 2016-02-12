@@ -57,12 +57,12 @@ grammar! awesome {
         = primary_expr (mult_expr_op primary_expr)* > fold_left
 
     primary_expr
-        = call > call
+        = assign_expr
+          / call > call
           / receiver_expr
 
     receiver_expr
-        = assign_expr
-        / literal
+        = literal
         / constant
         / identifier
         / lparen expr rparen
