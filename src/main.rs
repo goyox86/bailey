@@ -13,11 +13,11 @@ grammar! awesome {
         = ((expr / decl / stmt) terminator?)*
 
     decl
-        = class_decl > class_decl
+        = class_decl
         / method_decl
 
     class_decl
-        = kw_class constant class_body
+        = kw_class constant class_body > class_decl
 
     class_body
         = lbracket method_decl* rbracket
@@ -26,17 +26,17 @@ grammar! awesome {
         = kw_def identifier lparen param_list? rparen block > method_decl
 
     block
-        = lbracket ((stmt / expr) terminator?)* rbracket
+        = lbracket ((stmt / expr) terminator?)* rbracket > block
 
     stmt
-        = if_stmt > if_stmt
-        / while_stmt > while_stmt
+        = if_stmt
+        / while_stmt
 
     if_stmt
-        = kw_if expr block (kw_else block)?
+        = kw_if expr block (kw_else block)? > if_stmt
 
     while_stmt
-        = kw_while expr block
+        = kw_while expr block > while_stmt
 
     call_with_receiver
         = (receiver_expr ".")? identifier lparen arg_list? rparen
@@ -208,15 +208,23 @@ grammar! awesome {
         Box::new(ClassDecl(class, methods))
     }
 
-    fn method_decl(identifier: PExpr, params: Option<(PExpr, Vec<PExpr>)>, body: Vec<(PExpr, Option<()>)>) -> PExpr {
+    fn method_decl(identifier: PExpr, params: Option<(PExpr, Vec<PExpr>)>, body: Vec<PExpr>) -> PExpr {
         Box::new(MethodDecl(identifier, params, body))
     }
 
-    fn if_stmt(condition: PExpr, block: Vec<(PExpr, Option<()>)>, else_block: Option<Vec<(PExpr, Option<()>)>>) -> PExpr {
+    fn block(exprs: Vec<(PExpr, Option<()>)>) -> Vec<PExpr> {
+        exprs.into_iter().map(|expr| {
+            match expr {
+                (e, _) => e
+            }
+        }).collect()
+    }
+
+    fn if_stmt(condition: PExpr, block: Vec<PExpr>, else_block: Option<Vec<PExpr>>) -> PExpr {
         Box::new(IfStatement(condition, block, else_block))
     }
 
-    fn while_stmt(condition: PExpr,  block: Vec<(PExpr, Option<()>)>) -> PExpr {
+    fn while_stmt(condition: PExpr,  block: Vec<PExpr>) -> PExpr {
       Box::new(WhileStatement(condition, block))
     }
 
@@ -264,9 +272,9 @@ grammar! awesome {
         BinaryExpr(BinOp, PExpr, PExpr),
         AssingExpr(PExpr, PExpr),
         ClassDecl(PExpr, Vec<PExpr>),
-        IfStatement(PExpr, Vec<(PExpr, Option<()>)>, Option<Vec<(PExpr, Option<()>)>>),
-        MethodDecl(PExpr, Option<(PExpr, Vec<PExpr>)>, Vec<(PExpr, Option<()>)>),
-        WhileStatement(PExpr, Vec<(PExpr, Option<()>)>),
+        IfStatement(PExpr, Vec<PExpr>, Option<Vec<PExpr>>),
+        MethodDecl(PExpr, Option<(PExpr, Vec<PExpr>)>, Vec<PExpr>),
+        WhileStatement(PExpr, Vec<PExpr>),
         Call(Option<PExpr>, PExpr, Option<(PExpr, Vec<PExpr>)>),
         Block(Vec<PExpr>)
     }
