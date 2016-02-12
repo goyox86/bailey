@@ -38,8 +38,11 @@ grammar! awesome {
     while_stmt
         = kw_while expr block
 
-    call
+    call_with_receiver
         = (receiver_expr ".")? identifier lparen arg_list? rparen
+
+    call_no_receiver
+        = identifier lparen arg_list? rparen
 
     assign_expr
         = identifier bind_op expr > assign_expr
@@ -58,11 +61,12 @@ grammar! awesome {
 
     primary_expr
         = assign_expr
-          / call > call
+          / call_with_receiver > call_with_receiver
           / receiver_expr
 
     receiver_expr
         = literal
+        / call_no_receiver > call_no_receiver
         / constant
         / identifier
         / lparen expr rparen
@@ -188,7 +192,11 @@ grammar! awesome {
     fn and_bin_op() -> BinOp { And }
     fn or_bin_op() -> BinOp { Or }
 
-    fn call(receiver: Option<PExpr>, method: PExpr, args: Option<(PExpr, Vec<PExpr>)>) -> PExpr {
+    fn call_no_receiver(method: PExpr, args: Option<(PExpr, Vec<PExpr>)>) -> PExpr {
+        Box::new(Call(None, method, args))
+    }
+
+    fn call_with_receiver(receiver: Option<PExpr>, method: PExpr, args: Option<(PExpr, Vec<PExpr>)>) -> PExpr {
         Box::new(Call(receiver, method, args))
     }
 
@@ -274,5 +282,5 @@ fn main() {
     let mut reader = BufReader::new(f);
     let mut contents = String::new();
     reader.read_to_string(&mut contents);
-    println!("{:#?}", awesome::parse_program(contents.stream()));
+    println!("{:#?}", awesome::parse_program(contents.stream()).unwrap_data());
 }
