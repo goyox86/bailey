@@ -72,10 +72,10 @@ grammar! awesome {
         / lparen expr rparen
 
     arg_list
-        = (expr ("," spacing expr)*)
+        = (expr ("," spacing expr)*) > arg_list
 
     param_list
-        = (identifier ("," spacing identifier)*)
+        = (identifier ("," spacing identifier)*) > param_list
 
     digit = ["0-9"]
     identifier_char = ["A-Za-z0-9_"]
@@ -192,11 +192,11 @@ grammar! awesome {
     fn and_bin_op() -> BinOp { And }
     fn or_bin_op() -> BinOp { Or }
 
-    fn call_no_receiver(method: PExpr, args: Option<(PExpr, Vec<PExpr>)>) -> PExpr {
+    fn call_no_receiver(method: PExpr, args: Option<Vec<PExpr>>) -> PExpr {
         Box::new(Call(None, method, args))
     }
 
-    fn call_with_receiver(receiver: Option<PExpr>, method: PExpr, args: Option<(PExpr, Vec<PExpr>)>) -> PExpr {
+    fn call_with_receiver(receiver: Option<PExpr>, method: PExpr, args: Option<Vec<PExpr>>) -> PExpr {
         Box::new(Call(receiver, method, args))
     }
 
@@ -208,7 +208,7 @@ grammar! awesome {
         Box::new(ClassDecl(class, methods))
     }
 
-    fn method_decl(identifier: PExpr, params: Option<(PExpr, Vec<PExpr>)>, body: Vec<PExpr>) -> PExpr {
+    fn method_decl(identifier: PExpr, params: Option<Vec<PExpr>>, body: Vec<PExpr>) -> PExpr {
         Box::new(MethodDecl(identifier, params, body))
     }
 
@@ -226,6 +226,14 @@ grammar! awesome {
 
     fn while_stmt(condition: PExpr,  block: Vec<PExpr>) -> PExpr {
       Box::new(WhileStatement(condition, block))
+    }
+
+    fn arg_list(first: PExpr, mut rest: Vec<PExpr>) -> Vec<PExpr> {
+        combine_one_with_many(first, rest)
+    }
+
+    fn param_list(first: PExpr, mut rest: Vec<PExpr>) -> Vec<PExpr> {
+        combine_one_with_many(first, rest)
     }
 
     fn to_string(raw_text: Vec<char>) -> String {
@@ -256,13 +264,18 @@ grammar! awesome {
         result
     }
 
+    fn combine_one_with_many<T: Clone>(first: T, rest: Vec<T>) -> Vec<T> {
+        let mut result = vec![first];
+        combine(result, rest)
+    }
+
     use std::str::FromStr;
     use self::Expression::*;
     use self::BinOp::*;
 
     pub type PExpr = Box<Expression>;
 
-    #[derive(Debug)]
+    #[derive(Debug, Clone)]
     pub enum Expression {
         Identifier(String),
         Constant(String),
@@ -273,13 +286,13 @@ grammar! awesome {
         AssingExpr(PExpr, PExpr),
         ClassDecl(PExpr, Vec<PExpr>),
         IfStatement(PExpr, Vec<PExpr>, Option<Vec<PExpr>>),
-        MethodDecl(PExpr, Option<(PExpr, Vec<PExpr>)>, Vec<PExpr>),
+        MethodDecl(PExpr, Option<Vec<PExpr>>, Vec<PExpr>),
         WhileStatement(PExpr, Vec<PExpr>),
-        Call(Option<PExpr>, PExpr, Option<(PExpr, Vec<PExpr>)>),
+        Call(Option<PExpr>, PExpr, Option<Vec<PExpr>>),
         Block(Vec<PExpr>)
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, Clone)]
     pub enum BinOp {
         Add, Sub, Mul, Div, Lt, Lte, Gt, Gte, Ne, Eq, And, Or
     }
