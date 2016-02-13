@@ -8,7 +8,7 @@ use std::io::prelude::*;
 use std::fs::File;
 use std::io::BufReader;
 
-grammar! awesome {
+grammar! bailey {
     program
         = ((expr / decl / stmt) terminator?)*
 
@@ -303,5 +303,5 @@ fn main() {
     let mut reader = BufReader::new(f);
     let mut contents = String::new();
     reader.read_to_string(&mut contents);
-    println!("{:#?}", awesome::parse_program(contents.stream()).unwrap_data());
+    println!("{:#?}", bailey::parse_program(contents.stream()).unwrap_data());
 }
