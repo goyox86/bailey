@@ -299,7 +299,7 @@ grammar! bailey {
 }
 
 fn main() {
-    let f = File::open("./src/example.awm").ok().expect("failed to open file");
+    let f = File::open("./src/example.bly").ok().expect("failed to open file");
     let mut reader = BufReader::new(f);
     let mut contents = String::new();
     reader.read_to_string(&mut contents);
