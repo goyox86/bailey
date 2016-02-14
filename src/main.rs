@@ -38,11 +38,11 @@ grammar! bailey {
     while_stmt
         = kw_while expr block > while_stmt
 
-    call_with_receiver
-        = (receiver_expr ".")? identifier lparen arg_list? rparen
-
     call_no_receiver
         = identifier lparen arg_list? rparen
+
+    call_with_receiver
+        = receiver_expr ("." call_no_receiver)* > call_with_receiver
 
     assign_expr
         = identifier bind_op expr > assign_expr
@@ -61,7 +61,7 @@ grammar! bailey {
 
     primary_expr
         = assign_expr
-          / call_with_receiver > call_with_receiver
+          / call_with_receiver
           / receiver_expr
 
     receiver_expr
@@ -196,8 +196,9 @@ grammar! bailey {
         Box::new(Call(None, method, args))
     }
 
-    fn call_with_receiver(receiver: Option<PExpr>, method: PExpr, args: Option<Vec<PExpr>>) -> PExpr {
-        Box::new(Call(receiver, method, args))
+    fn call_with_receiver(receiver: PExpr, call: Vec<(PExpr, Option<Vec<PExpr>>)>) -> PExpr {
+        call.into_iter().fold(receiver,
+          |accu, (identifier, args)| Box::new(Call(Some(accu), identifier, args)))
     }
 
     fn assign_expr(identifier: PExpr, expr: PExpr) -> PExpr {
