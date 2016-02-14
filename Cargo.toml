@@ -9,3 +9,6 @@ git = "https://github.com/ptal/oak.git"
 [dependencies.oak_runtime]
 git = "https://github.com/ptal/oak.git"
 path = "runtime"
+
+[dependencies.getopts]
+version = "0.2"
