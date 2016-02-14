@@ -10,7 +10,7 @@ use std::io::BufReader;
 
 grammar! bailey {
     program
-        = ((expr / decl / stmt) terminator?)*
+        = ((expr / decl / stmt) terminator?)* > program
 
     decl
         = class_decl
@@ -215,9 +215,13 @@ grammar! bailey {
 
     fn block(exprs: Vec<(PExpr, Option<()>)>) -> Vec<PExpr> {
         exprs.into_iter().map(|expr| {
-            match expr {
-                (e, _) => e
-            }
+            match expr { (e, _) => e }
+        }).collect()
+    }
+
+    fn program(instructions: Vec<(PExpr, Option<()>)>) -> Vec<PExpr> {
+        instructions.into_iter().map(|inst| {
+            match inst { (i, _) => i }
         }).collect()
     }
 
