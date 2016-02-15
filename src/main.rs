@@ -28,7 +28,7 @@ grammar! bailey {
         = lbracket method_decl* rbracket
 
     method_decl
-        = kw_def identifier lparen param_list? rparen block > method_decl
+        = kw_def identifier lparen param_list rparen block > method_decl
 
     block
         = lbracket ((stmt / expr) terminator?)* rbracket > block
@@ -43,11 +43,11 @@ grammar! bailey {
     while_stmt
         = kw_while expr block > while_stmt
 
-    call_no_receiver
-        = identifier lparen arg_list? rparen
+    function_call
+        = identifier lparen arg_list rparen
 
-    call_with_receiver
-        = receiver_expr ("." call_no_receiver)* > call_with_receiver
+    method_call
+        = callable_expr (dot function_call)+
 
     assign_expr
         = identifier bind_op expr > assign_expr
@@ -66,21 +66,25 @@ grammar! bailey {
 
     primary_expr
         = assign_expr
-          / call_with_receiver
-          / receiver_expr
+        / method_call > method_call
+        / callable_expr
 
-    receiver_expr
-        = call_no_receiver > call_no_receiver
+    callable_expr
+        = function_call > function_call
         / literal
         / constant
         / identifier
         / lparen expr rparen
 
     arg_list
-        = (expr ("," spacing expr)*) > arg_list
+        = empty_list
+        / expr (comma expr)* > arg_list
 
     param_list
-        = (identifier ("," spacing identifier)*) > param_list
+        = empty_list
+        / identifier (comma identifier)* > param_list
+
+    empty_list = &rparen > empty_list
 
     digit = ["0-9"]
     identifier_char = ["A-Za-z0-9_"]
@@ -160,16 +164,17 @@ grammar! bailey {
     dbl_quot = "\"" spacing
     sng_quot = "'" spacing
     terminator = ";" spacing
+    dot = "." spacing
+    comma = "," spacing
 
     fn lit_int(raw_text: Vec<char>) -> PExpr {
         Box::new(IntegerLiteral(to_number(raw_text)))
     }
 
     // FIXME: Please remove this hacky wacky '.' thingy
-    fn lit_float(integer: Vec<char>, fractional: Vec<char>) -> PExpr {
-        let mut buf = integer;
-        buf.push('.');
-        Box::new(FloatLiteral(to_float(combine(buf, fractional))))
+    fn lit_float(mut integer: Vec<char>, fractional: Vec<char>) -> PExpr {
+        integer.push('.');
+        Box::new(FloatLiteral(to_float(combine(integer, fractional))))
     }
 
     fn lit_string(raw_text: Vec<char>) -> PExpr {
@@ -197,11 +202,11 @@ grammar! bailey {
     fn and_bin_op() -> BinOp { And }
     fn or_bin_op() -> BinOp { Or }
 
-    fn call_no_receiver(method: PExpr, args: Option<Vec<PExpr>>) -> PExpr {
+    fn function_call(method: PExpr, args: Vec<PExpr>) -> PExpr {
         Box::new(Call(None, method, args))
     }
 
-    fn call_with_receiver(receiver: PExpr, call: Vec<(PExpr, Option<Vec<PExpr>>)>) -> PExpr {
+    fn method_call(receiver: PExpr, call: Vec<(PExpr, Vec<PExpr>)>) -> PExpr {
         call.into_iter().fold(receiver,
           |accu, (identifier, args)| Box::new(Call(Some(accu), identifier, args)))
     }
@@ -214,7 +219,7 @@ grammar! bailey {
         Box::new(ClassDecl(class, methods))
     }
 
-    fn method_decl(identifier: PExpr, params: Option<Vec<PExpr>>, body: Vec<PExpr>) -> PExpr {
+    fn method_decl(identifier: PExpr, params: Vec<PExpr>, body: Vec<PExpr>) -> PExpr {
         Box::new(MethodDecl(identifier, params, body))
     }
 
@@ -268,15 +273,17 @@ grammar! bailey {
           |accu, (expr, op)| Box::new(BinaryExpr(op, expr, accu)))
     }
 
-    fn combine<T: Clone>(left: Vec<T>, right: Vec<T>) -> Vec<T> {
-        let mut result = left.clone();
-        result.extend(right.into_iter());
-        result
+    fn combine<T: Clone>(mut left: Vec<T>, right: Vec<T>) -> Vec<T> {
+        left.extend(right.into_iter());
+        left
     }
 
     fn combine_one_with_many<T: Clone>(first: T, rest: Vec<T>) -> Vec<T> {
-        let mut result = vec![first];
-        combine(result, rest)
+        combine(vec![first], rest)
+    }
+
+    fn empty_list() -> Vec<PExpr> {
+        vec![]
     }
 
     use std::str::FromStr;
@@ -296,9 +303,9 @@ grammar! bailey {
         AssingExpr(PExpr, PExpr),
         ClassDecl(PExpr, Vec<PExpr>),
         IfStatement(PExpr, Vec<PExpr>, Option<Vec<PExpr>>),
-        MethodDecl(PExpr, Option<Vec<PExpr>>, Vec<PExpr>),
+        MethodDecl(PExpr, Vec<PExpr>, Vec<PExpr>),
         WhileStatement(PExpr, Vec<PExpr>),
-        Call(Option<PExpr>, PExpr, Option<Vec<PExpr>>),
+        Call(Option<PExpr>, PExpr, Vec<PExpr>),
         Block(Vec<PExpr>)
     }
 
