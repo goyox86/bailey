@@ -43,11 +43,11 @@ grammar! bailey {
     while_stmt
         = kw_while expr block > while_stmt
 
-    call_no_receiver
+    msg_no_receiver
         = identifier lparen arg_list? rparen
 
-    call_with_receiver
-        = receiver_expr ("." call_no_receiver)* > call_with_receiver
+    msg_with_receiver
+        = receiver_expr ("." msg_no_receiver)* > msg_with_receiver
 
     assign_expr
         = identifier bind_op expr > assign_expr
@@ -66,11 +66,11 @@ grammar! bailey {
 
     primary_expr
         = assign_expr
-          / call_with_receiver
+          / msg_with_receiver
           / receiver_expr
 
     receiver_expr
-        = call_no_receiver > call_no_receiver
+        = msg_no_receiver > msg_no_receiver
         / literal
         / constant
         / identifier
@@ -197,13 +197,13 @@ grammar! bailey {
     fn and_bin_op() -> BinOp { And }
     fn or_bin_op() -> BinOp { Or }
 
-    fn call_no_receiver(method: PExpr, args: Option<Vec<PExpr>>) -> PExpr {
-        Box::new(Call(None, method, args))
+    fn msg_no_receiver(method: PExpr, args: Option<Vec<PExpr>>) -> PExpr {
+        Box::new(Message(None, method, args))
     }
 
-    fn call_with_receiver(receiver: PExpr, call: Vec<(PExpr, Option<Vec<PExpr>>)>) -> PExpr {
+    fn msg_with_receiver(receiver: PExpr, call: Vec<(PExpr, Option<Vec<PExpr>>)>) -> PExpr {
         call.into_iter().fold(receiver,
-          |accu, (identifier, args)| Box::new(Call(Some(accu), identifier, args)))
+          |accu, (identifier, args)| Box::new(Message(Some(accu), identifier, args)))
     }
 
     fn assign_expr(identifier: PExpr, expr: PExpr) -> PExpr {
@@ -298,7 +298,7 @@ grammar! bailey {
         IfStatement(PExpr, Vec<PExpr>, Option<Vec<PExpr>>),
         MethodDecl(PExpr, Option<Vec<PExpr>>, Vec<PExpr>),
         WhileStatement(PExpr, Vec<PExpr>),
-        Call(Option<PExpr>, PExpr, Option<Vec<PExpr>>),
+        Message(Option<PExpr>, PExpr, Option<Vec<PExpr>>),
         Block(Vec<PExpr>)
     }
 
