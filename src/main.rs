@@ -318,6 +318,7 @@ fn main() {
     let program = args[0].clone();
 
     let mut opts = Options::new();
+
     opts.optopt("e", "", "evaluate expression", "EXP");
     opts.optflag("h", "help", "print this help menu");
     let matches = match opts.parse(&args[1..]) {
@@ -325,19 +326,14 @@ fn main() {
         Err(f) => { panic!(f.to_string()) }
     };
 
-    if matches.opt_present("h") {
+    if args.len() < 2 {
         print_usage(program, opts);
         return;
     }
 
-    let file_path = args[1].clone();
-    if Path::new(&file_path).exists() {
-        let f = File::open(file_path).ok().expect("failed to open file");
-        let mut reader = BufReader::new(f);
-        let mut code = String::new();
-        reader.read_to_string(&mut code);
-        println!("{:#?}", bailey::parse_program(code.stream()).unwrap_data());
-        return
+    if matches.opt_present("h") {
+        print_usage(program, opts);
+        return;
     }
 
     let expression = matches.opt_str("e");
@@ -347,5 +343,15 @@ fn main() {
             return
         },
         None => print_usage(program, opts)
+    };
+
+    let file_path = args[1].clone();
+    if Path::new(&file_path).exists() {
+        let f = File::open(file_path).ok().expect("failed to open file");
+        let mut reader = BufReader::new(f);
+        let mut code = String::new();
+        reader.read_to_string(&mut code);
+        println!("{:#?}", bailey::parse_program(code.stream()).unwrap_data());
+        return
     };
 }
