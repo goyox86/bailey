@@ -161,26 +161,26 @@ grammar! bailey {
     sng_quot = "'" spacing
     terminator = ";" spacing
 
-    fn lit_int(raw_text: Vec<char>) -> PExpr {
+    fn lit_int(raw_text: Vec<char>) -> PNode {
         Box::new(IntegerLiteral(to_number(raw_text)))
     }
 
     // FIXME: Please remove this hacky wacky '.' thingy
-    fn lit_float(integer: Vec<char>, fractional: Vec<char>) -> PExpr {
+    fn lit_float(integer: Vec<char>, fractional: Vec<char>) -> PNode {
         let mut buf = integer;
         buf.push('.');
         Box::new(FloatLiteral(to_float(combine(buf, fractional))))
     }
 
-    fn lit_string(raw_text: Vec<char>) -> PExpr {
+    fn lit_string(raw_text: Vec<char>) -> PNode {
         Box::new(StringLiteral(to_string(raw_text)))
     }
 
-    fn constant(first: Vec<char>, rest: Vec<char>) -> PExpr {
+    fn constant(first: Vec<char>, rest: Vec<char>) -> PNode {
         Box::new(Constant(to_string(combine(first, rest))))
     }
 
-    fn identifier(raw_text: Vec<char>) -> PExpr {
+    fn identifier(raw_text: Vec<char>) -> PNode {
         Box::new(Identifier(to_string(raw_text)))
     }
 
@@ -197,52 +197,52 @@ grammar! bailey {
     fn and_bin_op() -> BinOp { And }
     fn or_bin_op() -> BinOp { Or }
 
-    fn msg_no_receiver(method: PExpr, args: Option<Vec<PExpr>>) -> PExpr {
+    fn msg_no_receiver(method: PNode, args: Option<Vec<PNode>>) -> PNode {
         Box::new(Message(None, method, args))
     }
 
-    fn msg_with_receiver(receiver: PExpr, call: Vec<(PExpr, Option<Vec<PExpr>>)>) -> PExpr {
+    fn msg_with_receiver(receiver: PNode, call: Vec<(PNode, Option<Vec<PNode>>)>) -> PNode {
         call.into_iter().fold(receiver,
           |accu, (identifier, args)| Box::new(Message(Some(accu), identifier, args)))
     }
 
-    fn assign_expr(identifier: PExpr, expr: PExpr) -> PExpr {
+    fn assign_expr(identifier: PNode, expr: PNode) -> PNode {
         Box::new(AssingExpr(identifier, expr))
     }
 
-    fn class_decl(class: PExpr, methods: Vec<PExpr>) -> PExpr {
+    fn class_decl(class: PNode, methods: Vec<PNode>) -> PNode {
         Box::new(ClassDecl(class, methods))
     }
 
-    fn method_decl(identifier: PExpr, params: Option<Vec<PExpr>>, body: Vec<PExpr>) -> PExpr {
+    fn method_decl(identifier: PNode, params: Option<Vec<PNode>>, body: Vec<PNode>) -> PNode {
         Box::new(MethodDecl(identifier, params, body))
     }
 
-    fn block(exprs: Vec<(PExpr, Option<()>)>) -> Vec<PExpr> {
+    fn block(exprs: Vec<(PNode, Option<()>)>) -> Vec<PNode> {
         exprs.into_iter().map(|expr| {
             match expr { (e, _) => e }
         }).collect()
     }
 
-    fn program(instructions: Vec<(PExpr, Option<()>)>) -> Vec<PExpr> {
+    fn program(instructions: Vec<(PNode, Option<()>)>) -> Vec<PNode> {
         instructions.into_iter().map(|inst| {
             match inst { (i, _) => i }
         }).collect()
     }
 
-    fn if_stmt(condition: PExpr, block: Vec<PExpr>, else_block: Option<Vec<PExpr>>) -> PExpr {
+    fn if_stmt(condition: PNode, block: Vec<PNode>, else_block: Option<Vec<PNode>>) -> PNode {
         Box::new(IfStatement(condition, block, else_block))
     }
 
-    fn while_stmt(condition: PExpr,  block: Vec<PExpr>) -> PExpr {
+    fn while_stmt(condition: PNode,  block: Vec<PNode>) -> PNode {
       Box::new(WhileStatement(condition, block))
     }
 
-    fn arg_list(first: PExpr, mut rest: Vec<PExpr>) -> Vec<PExpr> {
+    fn arg_list(first: PNode, mut rest: Vec<PNode>) -> Vec<PNode> {
         combine_one_with_many(first, rest)
     }
 
-    fn param_list(first: PExpr, mut rest: Vec<PExpr>) -> Vec<PExpr> {
+    fn param_list(first: PNode, mut rest: Vec<PNode>) -> Vec<PNode> {
         combine_one_with_many(first, rest)
     }
 
@@ -258,12 +258,12 @@ grammar! bailey {
         f32::from_str(&*to_string(raw_text)).unwrap()
     }
 
-    fn fold_left(head: PExpr, rest: Vec<(BinOp, PExpr)>) -> PExpr {
+    fn fold_left(head: PNode, rest: Vec<(BinOp, PNode)>) -> PNode {
         rest.into_iter().fold(head,
           |accu, (op, expr)| Box::new(BinaryExpr(op, accu, expr)))
     }
 
-    fn fold_right(front: Vec<(PExpr, BinOp)>, last: PExpr) -> PExpr {
+    fn fold_right(front: Vec<(PNode, BinOp)>, last: PNode) -> PNode {
         front.into_iter().rev().fold(last,
           |accu, (expr, op)| Box::new(BinaryExpr(op, expr, accu)))
     }
@@ -280,26 +280,26 @@ grammar! bailey {
     }
 
     use std::str::FromStr;
-    use self::Expression::*;
+    use self::Node::*;
     use self::BinOp::*;
 
-    pub type PExpr = Box<Expression>;
+    pub type PNode = Box<Node>;
 
     #[derive(Debug, Clone)]
-    pub enum Expression {
+    pub enum Node {
         Identifier(String),
         Constant(String),
         IntegerLiteral(u32),
         FloatLiteral(f32),
         StringLiteral(String),
-        BinaryExpr(BinOp, PExpr, PExpr),
-        AssingExpr(PExpr, PExpr),
-        ClassDecl(PExpr, Vec<PExpr>),
-        IfStatement(PExpr, Vec<PExpr>, Option<Vec<PExpr>>),
-        MethodDecl(PExpr, Option<Vec<PExpr>>, Vec<PExpr>),
-        WhileStatement(PExpr, Vec<PExpr>),
-        Message(Option<PExpr>, PExpr, Option<Vec<PExpr>>),
-        Block(Vec<PExpr>)
+        BinaryExpr(BinOp, PNode, PNode),
+        AssingExpr(PNode, PNode),
+        ClassDecl(PNode, Vec<PNode>),
+        IfStatement(PNode, Vec<PNode>, Option<Vec<PNode>>),
+        MethodDecl(PNode, Option<Vec<PNode>>, Vec<PNode>),
+        WhileStatement(PNode, Vec<PNode>),
+        Message(Option<PNode>, PNode, Option<Vec<PNode>>),
+        Block(Vec<PNode>)
     }
 
     #[derive(Debug, Clone)]
