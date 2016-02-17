@@ -1,4 +1,10 @@
 grammar! bailey {
+    use ast::Node::*;
+    use ast::BinOp;
+    use ast::BinOp::*;
+    use ast::PNode;
+    use std::str::FromStr;
+
     program
         = ((expr / decl / stmt) terminator?)* > program
 
@@ -146,33 +152,27 @@ grammar! bailey {
     sng_quot = "'" spacing
     terminator = ";" spacing
 
-    use ast::Node::*;
-    use ast::BinOp;
-    use ast::BinOp::*;
-    use ast::PNode;
-    use std::str::FromStr;
-
     fn lit_int(raw_text: Vec<char>) -> PNode {
-        Box::new(IntegerLiteral(to_number(raw_text)))
+        Box::new(IntegerLiteral { value: to_number(raw_text) })
     }
 
     // FIXME: Please remove this hacky wacky '.' thingy
     fn lit_float(integer: Vec<char>, fractional: Vec<char>) -> PNode {
         let mut buf = integer;
         buf.push('.');
-        Box::new(FloatLiteral(to_float(combine(buf, fractional))))
+        Box::new(FloatLiteral { value: to_float(combine(buf, fractional)) })
     }
 
     fn lit_string(raw_text: Vec<char>) -> PNode {
-        Box::new(StringLiteral(to_string(raw_text)))
+        Box::new(StringLiteral { value: to_string(raw_text) })
     }
 
     fn constant(first: Vec<char>, rest: Vec<char>) -> PNode {
-        Box::new(Constant(to_string(combine(first, rest))))
+        Box::new(Constant { name:to_string(combine(first, rest)) })
     }
 
     fn identifier(raw_text: Vec<char>) -> PNode {
-        Box::new(Identifier(to_string(raw_text)))
+        Box::new(Identifier { name: to_string(raw_text) })
     }
 
     fn add_bin_op() -> BinOp { Add }
@@ -189,30 +189,33 @@ grammar! bailey {
     fn or_bin_op() -> BinOp { Or }
 
     fn msg_no_receiver(method: PNode, args: Option<Vec<PNode>>) -> PNode {
-        Box::new(Message(None, method, args))
+        Box::new(Message { receiver: None, method: method, args: args })
     }
 
     fn msg_with_receiver(receiver: PNode, call: Vec<(PNode, Option<Vec<PNode>>)>) -> PNode {
-        call.into_iter().fold(receiver,
-          |accu, (identifier, args)| Box::new(Message(Some(accu), identifier, args)))
+        call.into_iter().fold(receiver, { |accu, (method, args)|
+            Box::new(Message{ receiver: Some(accu), method: method, args: args })
+        })
     }
 
     fn assign_expr(identifier: PNode, expr: PNode) -> PNode {
-        Box::new(AssingExpr(identifier, expr))
+        Box::new(AssingExpression { identifier: identifier, expression: expr })
     }
 
-    fn class_decl(class: PNode, methods: Vec<PNode>) -> PNode {
-        Box::new(ClassDecl(class, methods))
+    fn class_decl(class_name: PNode, methods: Vec<PNode>) -> PNode {
+        Box::new(ClassDeclaration { identifier: class_name, methods: methods })
     }
 
-    fn method_decl(identifier: PNode, params: Option<Vec<PNode>>, body: Vec<PNode>) -> PNode {
-        Box::new(MethodDecl(identifier, params, body))
+    fn method_decl(method: PNode, params: Option<Vec<PNode>>, block: PNode) -> PNode {
+        Box::new(MethodDeclaration { method: method, params: params, block: block })
     }
 
-    fn block(exprs: Vec<(PNode, Option<()>)>) -> Vec<PNode> {
-        exprs.into_iter().map(|expr| {
+    fn block(instructions: Vec<(PNode, Option<()>)>) -> PNode {
+        let instructions = instructions.into_iter().map(|expr| {
             match expr { (e, _) => e }
-        }).collect()
+        }).collect();
+
+        Box::new(Block {instructions: instructions})
     }
 
     fn program(instructions: Vec<(PNode, Option<()>)>) -> Vec<PNode> {
@@ -221,12 +224,12 @@ grammar! bailey {
         }).collect()
     }
 
-    fn if_stmt(condition: PNode, block: Vec<PNode>, else_block: Option<Vec<PNode>>) -> PNode {
-        Box::new(IfStatement(condition, block, else_block))
+    fn if_stmt(condition: PNode, true_block: PNode, false_block: Option<PNode>) -> PNode {
+        Box::new(IfStatement{ condition: condition, true_block: true_block, false_block: false_block })
     }
 
-    fn while_stmt(condition: PNode,  block: Vec<PNode>) -> PNode {
-      Box::new(WhileStatement(condition, block))
+    fn while_stmt(condition: PNode,  block: PNode) -> PNode {
+      Box::new(WhileStatement { condition: condition, block: block })
     }
 
     fn arg_list(first: PNode, mut rest: Vec<PNode>) -> Vec<PNode> {
@@ -251,12 +254,12 @@ grammar! bailey {
 
     fn fold_left(head: PNode, rest: Vec<(BinOp, PNode)>) -> PNode {
         rest.into_iter().fold(head,
-          |accu, (op, expr)| Box::new(BinaryExpr(op, accu, expr)))
+          |accu, (op, expr)| Box::new(BinaryExpression { op: op, left: accu, right: expr }))
     }
 
     fn fold_right(front: Vec<(PNode, BinOp)>, last: PNode) -> PNode {
         front.into_iter().rev().fold(last,
-          |accu, (expr, op)| Box::new(BinaryExpr(op, expr, accu)))
+          |accu, (expr, op)| Box::new(BinaryExpression { op: op, left: expr, right: accu }))
     }
 
     fn combine<T: Clone>(left: Vec<T>, right: Vec<T>) -> Vec<T> {
