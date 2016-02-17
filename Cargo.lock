@@ -3,7 +3,7 @@ name = "awesome_oak"
 version = "0.1.0"
 dependencies = [
  "getopts 0.2.14 (registry+https://github.com/rust-lang/crates.io-index)",
- "oak 0.3.13 (git+https://github.com/ptal/oak.git)",
+ "oak 0.3.14 (git+https://github.com/ptal/oak.git)",
  "oak_runtime 0.3.7 (git+https://github.com/ptal/oak.git)",
 ]
 
@@ -14,11 +14,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "oak"
-version = "0.3.13"
-source = "git+https://github.com/ptal/oak.git#0d5c0c55475a6fe1a417fc55729a3e727b5cca57"
+version = "0.3.14"
+source = "git+https://github.com/ptal/oak.git#98c8a3af801764e0e453a7a98ac31e7dacc34f63"
 
 [[package]]
 name = "oak_runtime"
 version = "0.3.7"
-source = "git+https://github.com/ptal/oak.git#0d5c0c55475a6fe1a417fc55729a3e727b5cca57"
+source = "git+https://github.com/ptal/oak.git#98c8a3af801764e0e453a7a98ac31e7dacc34f63"
 
