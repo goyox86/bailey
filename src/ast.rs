@@ -6,6 +6,7 @@ pub enum Node {
     IntegerLiteral { value: u32 },
     FloatLiteral { value: f32 },
     StringLiteral { value: String },
+    ArrayLiteral { expressions: Vec<PNode> },
     BinaryExpression { op: BinOp, left: PNode, right: PNode },
     AssingExpression { identifier: PNode, expression: PNode },
     ClassDeclaration { identifier: PNode, methods: Vec<PNode> },
