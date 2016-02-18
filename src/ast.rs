@@ -22,3 +22,8 @@ pub enum BinOp {
 }
 
 pub type PNode = Box<Node>;
+
+#[allow(non_snake_case)]
+pub fn PNode(value: Node) -> PNode {
+    Box::new(value)
+}
