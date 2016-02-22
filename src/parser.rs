@@ -84,11 +84,13 @@ grammar! bailey {
         / lit_float
         / lit_int
         / lit_array
+        / lit_map
 
     lit_int = digit+ spacing > lit_int
     lit_float = digit+ "." digit+ spacing > lit_float
     lit_string = (dbl_quot_lit_string / sng_quot_lit_string) spacing > lit_string
     lit_array = lsqbracket expr ("," expr)* rsqbracket > lit_array
+    lit_map = lbracket (expr ":" expr)* rbracket > lit_map
 
     dbl_quot_lit_string = dbl_quot (spacing_char / !dbl_quot .)* dbl_quot
     sng_quot_lit_string = sng_quot (spacing_char / !sng_quot .)* sng_quot
@@ -173,6 +175,10 @@ grammar! bailey {
 
     fn lit_array(first: PNode, rest: Vec<PNode>) -> PNode {
         PNode(ArrayLiteral { expressions: combine_one_with_many(first, rest) })
+    }
+
+    fn lit_map(entries: Vec<(PNode, PNode)>) -> PNode {
+        PNode(MapLiteral { entries: entries })
     }
 
     fn constant(first: Vec<char>, rest: Vec<char>) -> PNode {
