@@ -10,7 +10,7 @@ use std::io::BufReader;
 use parser::bailey;
 use ast::PNode;
 
-pub fn print_usage(program: &String, opts: &Options) {
+fn print_usage(program: &String, opts: &Options) {
     let brief = format!("Usage: {} FILE [options]", program);
     print!("{}", opts.usage(&brief));
 }
