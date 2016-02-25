@@ -345,7 +345,7 @@ impl Parser {
         match state.into_result() {
           Ok((success, error)) => {
             if success.partial_read() {
-              Err(format!("Partial match: {:#?} because: {}", success.data, error))
+              Err(format!("Partial match: {:?} because: {}", success.data, error))
             }
             else {
                 self.ast = Some(success.data.clone());
