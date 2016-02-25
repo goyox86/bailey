@@ -1,13 +1,6 @@
-use oak_runtime::stream::*;
-
 use getopts::Options;
 
-use std::io::prelude::*;
-use std::fs::File;
-use std::io::BufReader;
-
-use parser::bailey;
-use ast::PNode;
+use parser::Parser;
 
 fn print_usage(program: &String, opts: &Options) {
     let brief = format!("Usage: {} FILE [options]", program);
@@ -15,6 +8,7 @@ fn print_usage(program: &String, opts: &Options) {
 }
 
 pub fn run(args: Vec<String>) {
+    let mut parser = Parser::new();
     let program = &args[0].clone();
 
     let mut opts = &mut Options::new();
@@ -34,7 +28,7 @@ pub fn run(args: Vec<String>) {
     if matches.opt_present("e") {
         match matches.opt_str("e") {
             Some(e) => {
-                println!("{:#?}", parse(e));
+                println!("{:#?}", parser.parse(e));
                 return
             },
             None => print_usage(program, opts)
@@ -47,35 +41,5 @@ pub fn run(args: Vec<String>) {
     }
 
     let file_path = args[1].clone();
-    println!("{:#?}", parse_file(file_path));
-}
-
-pub fn parse_file(file_path: String) -> Result<Vec<PNode>, String> {
-    match File::open(file_path) {
-        Ok(file) => {
-            let mut reader = BufReader::new(file);
-            let mut code = String::new();
-            reader.read_to_string(&mut code);
-            parse(code)
-        }
-        Err(error) => Err(format!("Error: {}", error))
-    }
-}
-
-pub fn parse(code: String) -> Result<Vec<PNode>, String> {
-    let state = bailey::parse_program(code.stream());
-
-    match state.into_result() {
-      Ok((success, error)) => {
-        if success.partial_read() {
-          Err(format!("Partial match: {:#?} because: {}", success.data, error))
-        }
-        else {
-          Ok(success.data)
-        }
-      }
-      Err(error) => {
-          Err(format!("Error: {}", error))
-      }
-    }
+    println!("{:#?}", parser.parse_file(file_path));
 }
