@@ -19,7 +19,7 @@ grammar! bailey {
         = lbracket method_decl* rbracket
 
     method_decl
-        = kw_def identifier lparen param_list? rparen block > method_decl
+        = kw_def identifier lparen param_list rparen block > method_decl
 
     block
         = lbracket ((stmt / expr) terminator?)* rbracket > block
@@ -34,17 +34,17 @@ grammar! bailey {
     while_stmt
         = kw_while expr block > while_stmt
 
-    msg_no_receiver
-        = identifier lparen arg_list? rparen
+    function_call
+        = identifier lparen arg_list rparen
 
-    msg_with_receiver
-        = receiver_expr ("." msg_no_receiver)* > msg_with_receiver
+    method_call
+        = callable_expr (dot function_call)+
 
     assign_expr
         = identifier bind_op expr > assign_expr
 
     expr
-        = spacing cond_expr
+        = cond_expr
 
     cond_expr
         = add_expr (cond_expr_op add_expr)* > fold_left
@@ -57,21 +57,25 @@ grammar! bailey {
 
     primary_expr
         = assign_expr
-          / msg_with_receiver
-          / receiver_expr
+          / method_call > method_call
+          / callable_expr
 
-    receiver_expr
-        = msg_no_receiver > msg_no_receiver
+    callable_expr
+        = function_call > function_call
         / literal
         / constant
         / identifier
         / lparen expr rparen
 
     arg_list
-        = (expr ("," spacing expr)*) > arg_list
+        = empty_list
+        / expr (comma expr)* > arg_list
 
     param_list
-        = (identifier ("," spacing identifier)*) > param_list
+        = empty_list
+        / identifier (comma identifier)* > param_list
+
+    empty_list = &rparen > empty_list
 
     digit = ["0-9"]
     identifier_char = ["A-Za-z0-9_"]
@@ -203,11 +207,11 @@ grammar! bailey {
     fn and_bin_op() -> BinOp { And }
     fn or_bin_op() -> BinOp { Or }
 
-    fn msg_no_receiver(method: PNode, args: Option<Vec<PNode>>) -> PNode {
+    fn function_call(method: PNode, args: Vec<PNode>) -> PNode {
         PNode(Message { receiver: None, method: method, args: args })
     }
 
-    fn msg_with_receiver(receiver: PNode, call: Vec<(PNode, Option<Vec<PNode>>)>) -> PNode {
+    fn method_call(receiver: PNode, call: Vec<(PNode, Vec<PNode>)>) -> PNode {
         call.into_iter().fold(receiver, { |accu, (method, args)|
             PNode(Message{ receiver: Some(accu), method: method, args: args })
         })
@@ -221,7 +225,7 @@ grammar! bailey {
         PNode(ClassDeclaration { identifier: class_name, methods: methods })
     }
 
-    fn method_decl(method: PNode, params: Option<Vec<PNode>>, block: PNode) -> PNode {
+    fn method_decl(method: PNode, params: Vec<PNode>, block: PNode) -> PNode {
         PNode(MethodDeclaration { method: method, params: params, block: block })
     }
 
@@ -253,6 +257,10 @@ grammar! bailey {
 
     fn param_list(first: PNode, mut rest: Vec<PNode>) -> Vec<PNode> {
         combine_one_with_many(first, rest)
+    }
+
+    fn empty_list() -> Vec<PNode> {
+        vec![]
     }
 
     fn to_string(raw_text: Vec<char>) -> String {

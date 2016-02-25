@@ -11,10 +11,10 @@ pub enum Node {
     BinaryExpression { op: BinOp, left: PNode, right: PNode },
     AssingExpression { identifier: PNode, expression: PNode },
     ClassDeclaration { identifier: PNode, methods: Vec<PNode> },
-    MethodDeclaration { method: PNode, params: Option<Vec<PNode>>, block: PNode },
+    MethodDeclaration { method: PNode, params: Vec<PNode>, block: PNode },
     IfStatement { condition: PNode, true_block: PNode, false_block: Option<PNode> },
     WhileStatement { condition: PNode, block: PNode },
-    Message { receiver: Option<PNode>, method: PNode, args: Option<Vec<PNode>> },
+    Message { receiver: Option<PNode>, method: PNode, args: Vec<PNode> },
     Block { instructions: Vec<PNode> }
 }
 
