@@ -1,4 +1,19 @@
 grammar! bailey {
+    use ast::Assignment;
+    use ast::Block;
+    use ast::Class;
+    use ast::Constant;
+    use ast::Identifier;
+    use ast::If;
+    use ast::IntegerLiteral;
+    use ast::FloatLiteral;
+    use ast::StringLiteral;
+    use ast::ArrayLiteral;
+    use ast::MapLiteral;
+    use ast::BinaryExpression;
+    use ast::Method;
+    use ast::Message;
+    use ast::While;
     use ast::Node::*;
     use ast::BinOp;
     use ast::BinOp::*;
@@ -165,33 +180,33 @@ grammar! bailey {
     comma = "," spacing
 
     fn lit_int(raw_text: Vec<char>) -> PNode {
-        PNode(IntegerLiteral { value: to_number(raw_text) })
+        PNode(IntExpr(IntegerLiteral { value: to_number(raw_text) }))
     }
 
     // FIXME: Please remove this hacky wacky '.' thingy
     fn lit_float(mut integer: Vec<char>, fractional: Vec<char>) -> PNode {
         integer.push('.');
-        PNode(FloatLiteral { value: to_float(combine(integer, fractional)) })
+        PNode(FltExpr(FloatLiteral { value: to_float(combine(integer, fractional)) }))
     }
 
     fn lit_string(raw_text: Vec<char>) -> PNode {
-        PNode(StringLiteral { value: to_string(raw_text) })
+        PNode(StrExpr(StringLiteral { value: to_string(raw_text) }))
     }
 
     fn lit_array(first: PNode, rest: Vec<PNode>) -> PNode {
-        PNode(ArrayLiteral { expressions: combine_one_with_many(first, rest) })
+        PNode(ArrExpr(ArrayLiteral { elements: combine_one_with_many(first, rest) }))
     }
 
     fn lit_map(entries: Vec<(PNode, PNode)>) -> PNode {
-        PNode(MapLiteral { entries: entries })
+        PNode(MapExpr(MapLiteral { entries: entries }))
     }
 
     fn constant(first: Vec<char>, rest: Vec<char>) -> PNode {
-        PNode(Constant { name:to_string(combine(first, rest)) })
+        PNode(ConstExpr(Constant { name: to_string(combine(first, rest)) }))
     }
 
     fn identifier(raw_text: Vec<char>) -> PNode {
-        PNode(Identifier { name: to_string(raw_text) })
+        PNode(IdentExpr(Identifier { name: to_string(raw_text) }))
     }
 
     fn add_bin_op() -> BinOp { Add }
@@ -208,25 +223,25 @@ grammar! bailey {
     fn or_bin_op() -> BinOp { Or }
 
     fn function_call(method: PNode, args: Vec<PNode>) -> PNode {
-        PNode(Message { receiver: None, method: method, args: args })
+        PNode(MessageExpr(Message { receiver: None, method: method, args: args }))
     }
 
     fn method_call(receiver: PNode, call: Vec<(PNode, Vec<PNode>)>) -> PNode {
         call.into_iter().fold(receiver, { |accu, (method, args)|
-            PNode(Message{ receiver: Some(accu), method: method, args: args })
+            PNode(MessageExpr(Message { receiver: Some(accu), method: method, args: args }))
         })
     }
 
     fn assign_expr(identifier: PNode, expr: PNode) -> PNode {
-        PNode(AssingExpression { identifier: identifier, expression: expr })
+        PNode(AssignExpr(Assignment { identifier: identifier, expression: expr }))
     }
 
     fn class_decl(class_name: PNode, methods: Vec<PNode>) -> PNode {
-        PNode(ClassDeclaration { identifier: class_name, methods: methods })
+        PNode(ClassDecl(Class { identifier: class_name, methods: methods }))
     }
 
     fn method_decl(method: PNode, params: Vec<PNode>, block: PNode) -> PNode {
-        PNode(MethodDeclaration { method: method, params: params, block: block })
+        PNode(MethodDecl(Method { method: method, params: params, block: block }))
     }
 
     fn block(instructions: Vec<(PNode, Option<()>)>) -> PNode {
@@ -234,7 +249,7 @@ grammar! bailey {
             match expr { (e, _) => e }
         }).collect();
 
-        PNode(Block {instructions: instructions})
+        PNode(BlockExpr(Block {instructions: instructions}))
     }
 
     fn program(instructions: Vec<(PNode, Option<()>)>) -> Vec<PNode> {
@@ -244,11 +259,11 @@ grammar! bailey {
     }
 
     fn if_stmt(condition: PNode, true_block: PNode, false_block: Option<PNode>) -> PNode {
-        PNode(IfStatement{ condition: condition, true_block: true_block, false_block: false_block })
+        PNode(IfStmt(If { condition: condition, true_block: true_block, false_block: false_block }))
     }
 
     fn while_stmt(condition: PNode,  block: PNode) -> PNode {
-      PNode(WhileStatement { condition: condition, block: block })
+      PNode(WhileStmt(While { condition: condition, block: block }))
     }
 
     fn arg_list(first: PNode, mut rest: Vec<PNode>) -> Vec<PNode> {
@@ -277,12 +292,12 @@ grammar! bailey {
 
     fn fold_left(head: PNode, rest: Vec<(BinOp, PNode)>) -> PNode {
         rest.into_iter().fold(head,
-          |accu, (op, expr)| PNode(BinaryExpression { op: op, left: accu, right: expr }))
+          |accu, (op, expr)| PNode(BinExpr(BinaryExpression { op: op, left: accu, right: expr })))
     }
 
     fn fold_right(front: Vec<(PNode, BinOp)>, last: PNode) -> PNode {
         front.into_iter().rev().fold(last,
-          |accu, (expr, op)| PNode(BinaryExpression { op: op, left: expr, right: accu }))
+          |accu, (expr, op)| PNode(BinExpr(BinaryExpression { op: op, left: expr, right: accu })))
     }
 
     fn combine<T: Clone>(mut left: Vec<T>, right: Vec<T>) -> Vec<T> {
