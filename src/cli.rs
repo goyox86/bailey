@@ -1,4 +1,6 @@
 use oak_runtime::stream::*;
+use oak_runtime::parse_state::*;
+use oak_runtime::str_stream::*;
 
 use getopts::Options;
 use std::path::Path;
@@ -8,6 +10,7 @@ use std::fs::File;
 use std::io::BufReader;
 
 use parser::bailey;
+use ast::PNode;
 
 pub fn print_usage(program: String, opts: Options) {
     let brief = format!("Usage: {} FILE [options]", program);
@@ -39,7 +42,7 @@ pub fn run(args: Vec<String>) {
     let expression = matches.opt_str("e");
     match expression {
         Some(e) => {
-            println!("{:#?}", bailey::parse_program(e.stream()).unwrap_data());
+            println!("{:#?}", analyse_state(bailey::parse_program(e.stream())));
             return
         },
         None => print_usage(program, opts)
@@ -51,7 +54,23 @@ pub fn run(args: Vec<String>) {
         let mut reader = BufReader::new(f);
         let mut code = String::new();
         reader.read_to_string(&mut code);
-        println!("{:#?}", bailey::parse_program(code.stream()).unwrap_data());
+        println!("{:#?}", analyse_state(bailey::parse_program(code.stream())));
         return
     };
+}
+
+fn analyse_state(state: ParseState<StrStream, Vec<PNode>>) {
+  match state.into_result() {
+    Ok((success, error)) => {
+      if success.partial_read() {
+        println!("Partial match: {:#?} because: {}", success.data, error);
+      }
+      else {
+        println!("Full match: {:#?}", success.data);
+      }
+    }
+    Err(error) => {
+      println!("Error: {}", error);
+    }
+  }
 }
