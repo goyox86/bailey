@@ -1,7 +1,6 @@
 use oak_runtime::stream::*;
 
 use getopts::Options;
-use std::path::Path;
 
 use std::io::prelude::*;
 use std::fs::File;
@@ -48,18 +47,19 @@ pub fn run(args: Vec<String>) {
     }
 
     let file_path = args[1].clone();
-    if Path::new(&file_path).exists() {
-        println!("{:#?}", parse_file(file_path));
-        return
-    };
+    println!("{:#?}", parse_file(file_path));
 }
 
 pub fn parse_file(file_path: String) -> Result<Vec<PNode>, String> {
-    let f = File::open(file_path).ok().expect("failed to open file");
-    let mut reader = BufReader::new(f);
-    let mut code = String::new();
-    reader.read_to_string(&mut code);
-    parse(code)
+    match File::open(file_path) {
+        Ok(file) => {
+            let mut reader = BufReader::new(file);
+            let mut code = String::new();
+            reader.read_to_string(&mut code);
+            parse(code)
+        }
+        Err(error) => Err(format!("Error: {}", error))
+    }
 }
 
 pub fn parse(code: String) -> Result<Vec<PNode>, String> {
