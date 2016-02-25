@@ -157,16 +157,17 @@ grammar! bailey {
     dbl_quot = "\"" spacing
     sng_quot = "'" spacing
     terminator = ";" spacing
+    dot = "." spacing
+    comma = "," spacing
 
     fn lit_int(raw_text: Vec<char>) -> PNode {
         PNode(IntegerLiteral { value: to_number(raw_text) })
     }
 
     // FIXME: Please remove this hacky wacky '.' thingy
-    fn lit_float(integer: Vec<char>, fractional: Vec<char>) -> PNode {
-        let mut buf = integer;
-        buf.push('.');
-        PNode(FloatLiteral { value: to_float(combine(buf, fractional)) })
+    fn lit_float(mut integer: Vec<char>, fractional: Vec<char>) -> PNode {
+        integer.push('.');
+        PNode(FloatLiteral { value: to_float(combine(integer, fractional)) })
     }
 
     fn lit_string(raw_text: Vec<char>) -> PNode {
@@ -276,14 +277,12 @@ grammar! bailey {
           |accu, (expr, op)| PNode(BinaryExpression { op: op, left: expr, right: accu }))
     }
 
-    fn combine<T: Clone>(left: Vec<T>, right: Vec<T>) -> Vec<T> {
-        let mut result = left.clone();
-        result.extend(right.into_iter());
-        result
+    fn combine<T: Clone>(mut left: Vec<T>, right: Vec<T>) -> Vec<T> {
+        left.extend(right.into_iter());
+        left
     }
 
     fn combine_one_with_many<T: Clone>(first: T, rest: Vec<T>) -> Vec<T> {
-        let mut result = vec![first];
-        combine(result, rest)
+        combine(vec![first], rest)
     }
 }
