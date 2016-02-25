@@ -1,3 +1,11 @@
+use oak_runtime::stream::*;
+
+use std::io::prelude::*;
+use std::fs::File;
+use std::io::BufReader;
+
+use ast::PNode;
+
 grammar! bailey {
     use ast::Assignment;
     use ast::Block;
@@ -307,5 +315,46 @@ grammar! bailey {
 
     fn combine_one_with_many<T: Clone>(first: T, rest: Vec<T>) -> Vec<T> {
         combine(vec![first], rest)
+    }
+}
+
+pub struct Parser {
+    pub ast: Option<Vec<PNode>>
+}
+
+impl Parser {
+    pub fn new() -> Parser {
+        Parser { ast: None }
+    }
+
+    pub fn parse_file(&mut self, file_path: String) -> Result<Vec<PNode>, String> {
+        match File::open(file_path) {
+            Ok(file) => {
+                let mut reader = BufReader::new(file);
+                let mut code = String::new();
+                reader.read_to_string(&mut code);
+                self.parse(code)
+            }
+            Err(error) => Err(format!("Error: {}", error))
+        }
+    }
+
+    pub fn parse(&mut self, code: String) -> Result<Vec<PNode>, String> {
+        let state = bailey::parse_program(code.stream());
+
+        match state.into_result() {
+          Ok((success, error)) => {
+            if success.partial_read() {
+              Err(format!("Partial match: {:#?} because: {}", success.data, error))
+            }
+            else {
+                self.ast = Some(success.data.clone());
+                Ok(success.data)
+            }
+          }
+          Err(error) => {
+              Err(format!("Error: {}", error))
+          }
+        }
     }
 }
