@@ -111,10 +111,10 @@ pub enum Node {
     MapExpr(MapLiteral),
     BinExpr(BinaryExpression),
     AssignExpr(Assignment),
+    MessageExpr(Message),
+    BlockExpr(Block),
     WhileStmt(While),
     IfStmt(If),
-    BlockExpr(Block),
-    MessageExpr(Message),
     ClassDecl(Class),
     MethodDecl(Method),
 }
