@@ -1,90 +1,4 @@
 #[derive(Debug, Clone)]
-pub struct Message {
-    pub receiver: Option<PNode>,
-    pub method: PNode,
-    pub args: Vec<PNode>,
-}
-
-#[derive(Debug, Clone)]
-pub struct Block {
-    pub instructions: Vec<PNode>,
-}
-
-#[derive(Debug, Clone)]
-pub struct Class {
-    pub identifier: PNode,
-    pub methods: Vec<PNode>,
-}
-
-#[derive(Debug, Clone)]
-pub struct Method {
-    pub method: PNode,
-    pub params: Vec<PNode>,
-    pub block: PNode,
-}
-
-#[derive(Debug, Clone)]
-pub struct If {
-    pub condition: PNode,
-    pub true_block: PNode,
-    pub false_block: Option<PNode>,
-}
-
-#[derive(Debug, Clone)]
-pub struct While {
-    pub condition: PNode,
-    pub block: PNode,
-}
-
-#[derive(Debug, Clone)]
-pub struct Assignment {
-    pub identifier: PNode,
-    pub expression: PNode,
-}
-
-#[derive(Debug, Clone)]
-pub struct Identifier {
-    pub name: String,
-}
-
-#[derive(Debug, Clone)]
-pub struct Constant {
-    pub name: String,
-}
-
-#[derive(Debug, Clone)]
-pub struct IntegerLiteral {
-    pub value: u32,
-}
-
-#[derive(Debug, Clone)]
-pub struct FloatLiteral {
-    pub value: f32,
-}
-
-#[derive(Debug, Clone)]
-pub struct StringLiteral {
-    pub value: String,
-}
-
-#[derive(Debug, Clone)]
-pub struct ArrayLiteral {
-    pub elements: Vec<PNode>,
-}
-
-#[derive(Debug, Clone)]
-pub struct MapLiteral {
-    pub entries: Vec<(PNode, PNode)>,
-}
-
-#[derive(Debug, Clone)]
-pub struct BinaryExpression {
-    pub op: BinOp,
-    pub left: PNode,
-    pub right: PNode,
-}
-
-#[derive(Debug, Clone)]
 pub enum BinOp {
     Add,
     Sub,
@@ -102,21 +16,21 @@ pub enum BinOp {
 
 #[derive(Debug, Clone)]
 pub enum Node {
-    IdentExpr(Identifier),
-    ConstExpr(Constant),
-    IntExpr(IntegerLiteral),
-    FltExpr(FloatLiteral),
-    StrExpr(StringLiteral),
-    ArrExpr(ArrayLiteral),
-    MapExpr(MapLiteral),
-    BinExpr(BinaryExpression),
-    AssignExpr(Assignment),
-    MessageExpr(Message),
-    BlockExpr(Block),
-    WhileStmt(While),
-    IfStmt(If),
-    ClassDecl(Class),
-    MethodDecl(Method),
+    Ident(String),
+    Const(String),
+    IntLit(u64),
+    FltLit(f64),
+    StrLit(String),
+    ArrLit(Vec<PNode>),
+    MapLit(Vec<(PNode, PNode)>),
+    Block(Vec<PNode>),
+    AssignExpr { var: PNode, expr: PNode },
+    BinExpr { op: BinOp, left: PNode, right: PNode},
+    Message { recv: Option<PNode>, meth: PNode, args: Vec<PNode> },
+    WhileStmt { cond: PNode, blk: PNode },
+    IfStmt  { cond: PNode, true_blk: PNode, false_blk: Option<PNode> },
+    ClassDecl { class: PNode, meths: Vec<PNode> },
+    MethodDecl { meth: PNode, params: Vec<PNode>, blk: PNode }
 }
 
 pub type PNode = Box<Node>;
