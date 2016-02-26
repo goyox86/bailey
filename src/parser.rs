@@ -7,10 +7,10 @@ use std::io::BufReader;
 use ast::PNode;
 
 grammar! bailey {
+    use ast::PNode;
     use ast::Node::*;
     use ast::BinOp;
     use ast::BinOp::*;
-    use ast::PNode;
     use std::str::FromStr;
 
     program
@@ -27,7 +27,7 @@ grammar! bailey {
         = lbracket method_decl* rbracket
 
     method_decl
-        = kw_def identifier lparen param_list rparen block > method_decl
+        = kw_def ident lparen param_list rparen block > method_decl
 
     block
         = lbracket ((stmt / expr) terminator?)* rbracket > block
@@ -43,13 +43,13 @@ grammar! bailey {
         = kw_while expr block > while_stmt
 
     function_call
-        = identifier lparen arg_list rparen
+        = ident lparen arg_list rparen
 
     method_call
         = callable_expr (dot function_call)+
 
     assign_expr
-        = identifier bind_op expr > assign_expr
+        = ident bind_op expr > assign_expr
 
     expr
         = cond_expr
@@ -72,7 +72,7 @@ grammar! bailey {
         = function_call > function_call
         / literal
         / constant
-        / identifier
+        / ident
         / lparen expr rparen
 
     arg_list
@@ -81,15 +81,15 @@ grammar! bailey {
 
     param_list
         = empty_list
-        / identifier (comma identifier)* > param_list
+        / ident (comma ident)* > param_list
 
     empty_list = &rparen > empty_list
 
     digit = ["0-9"]
-    identifier_char = ["A-Za-z0-9_"]
+    ident_char = ["A-Za-z0-9_"]
 
-    identifier = !digit !keyword identifier_char+ spacing > identifier
-    constant = !keyword !digit ["A-Z"]+ identifier_char+ spacing > constant
+    ident = !digit !keyword ident_char+ spacing > ident
+    constant = !keyword !digit ["A-Z"]+ ident_char+ spacing > constant
 
     literal
         = lit_string
@@ -99,10 +99,12 @@ grammar! bailey {
         / lit_map
 
     lit_int = digit+ spacing > lit_int
-    lit_float = digit+ "." digit+ spacing > lit_float
+    lit_float = digit+ dot digit+ spacing > lit_float
     lit_string = (dbl_quot_lit_string / sng_quot_lit_string) spacing > lit_string
-    lit_array = lsqbracket expr ("," expr)* rsqbracket > lit_array
-    lit_map = lbracket (expr ":" expr)* rbracket > lit_map
+    lit_array = lsqbracket expr (comma expr)* rsqbracket > lit_array
+
+    map_entry =  (expr colon expr)
+    lit_map = lbracket map_entry (comma map_entry)* rbracket > lit_map
 
     dbl_quot_lit_string = dbl_quot (spacing_char / !dbl_quot .)* dbl_quot
     sng_quot_lit_string = sng_quot (spacing_char / !sng_quot .)* sng_quot
@@ -171,6 +173,7 @@ grammar! bailey {
     terminator = ";" spacing
     dot = "." spacing
     comma = "," spacing
+    colon = ":" spacing
 
     fn lit_int(raw_text: Vec<char>) -> PNode {
         PNode(IntLit(to_number(raw_text)))
@@ -189,15 +192,15 @@ grammar! bailey {
         PNode(ArrLit(combine_one_with_many(first, rest)))
     }
 
-    fn lit_map(entries: Vec<(PNode, PNode)>) -> PNode {
-        PNode(MapLit(entries))
+    fn lit_map(first: (PNode, PNode), rest: Vec<(PNode, PNode)>) -> PNode {
+        PNode(MapLit(combine_one_with_many(first, rest)))
     }
 
     fn constant(first: Vec<char>, rest: Vec<char>) -> PNode {
         PNode(Const(to_string(combine(first, rest))))
     }
 
-    fn identifier(raw_text: Vec<char>) -> PNode {
+    fn ident(raw_text: Vec<char>) -> PNode {
         PNode(Ident(to_string(raw_text)))
     }
 
