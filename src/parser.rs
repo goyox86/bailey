@@ -306,7 +306,7 @@ grammar! bailey {
 }
 
 pub struct Parser {
-    pub ast: Option<Vec<PNode>>
+    pub ast: Option<Vec<PNode>>,
 }
 
 impl Parser {
@@ -322,7 +322,7 @@ impl Parser {
                 reader.read_to_string(&mut code);
                 self.parse(code)
             }
-            Err(error) => Err(format!("Error: {}", error))
+            Err(error) => Err(format!("Error: {}", error)),
         }
     }
 
@@ -330,18 +330,15 @@ impl Parser {
         let state = bailey::parse_program(code.stream());
 
         match state.into_result() {
-          Ok((success, error)) => {
-            if success.partial_read() {
-              Err(format!("Partial match: {:?} because: {}", success.data, error))
+            Ok((success, error)) => {
+                if success.partial_read() {
+                    Err(format!("Partial match: {:?} because: {}", success.data, error))
+                } else {
+                    self.ast = Some(success.data.clone());
+                    Ok(success.data)
+                }
             }
-            else {
-                self.ast = Some(success.data.clone());
-                Ok(success.data)
-            }
-          }
-          Err(error) => {
-              Err(format!("Error: {}", error))
-          }
+            Err(error) => Err(format!("Error: {}", error)),
         }
     }
 }
