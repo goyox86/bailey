@@ -24,13 +24,38 @@ pub enum Node {
     ArrLit(Vec<PNode>),
     MapLit(Vec<(PNode, PNode)>),
     Block(Vec<PNode>),
-    AssignExpr { var: PNode, expr: PNode },
-    BinExpr { op: BinOp, left: PNode, right: PNode},
-    Message { recv: Option<PNode>, meth: PNode, args: Vec<PNode> },
-    WhileStmt { cond: PNode, blk: PNode },
-    IfStmt  { cond: PNode, true_blk: PNode, false_blk: Option<PNode> },
-    ClassDecl { class: PNode, meths: Vec<PNode> },
-    MethodDecl { meth: PNode, params: Vec<PNode>, blk: PNode }
+    AssignExpr {
+        var: PNode,
+        expr: PNode,
+    },
+    BinExpr {
+        op: BinOp,
+        left: PNode,
+        right: PNode,
+    },
+    Message {
+        recv: Option<PNode>,
+        meth: PNode,
+        args: Vec<PNode>,
+    },
+    WhileStmt {
+        cond: PNode,
+        blk: PNode,
+    },
+    IfStmt {
+        cond: PNode,
+        true_blk: PNode,
+        false_blk: Option<PNode>,
+    },
+    ClassDecl {
+        class: PNode,
+        meths: Vec<PNode>,
+    },
+    MethodDecl {
+        meth: PNode,
+        params: Vec<PNode>,
+        blk: PNode,
+    },
 }
 
 pub type PNode = Box<Node>;

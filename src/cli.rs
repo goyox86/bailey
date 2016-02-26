@@ -16,8 +16,8 @@ pub fn run(args: Vec<String>) {
     opts.optopt("e", "", "evaluate expression", "EXP");
     opts.optflag("h", "help", "print this help menu");
     let matches = match opts.parse(&args[1..]) {
-        Ok(m) => { m }
-        Err(f) => { panic!(f.to_string()) }
+        Ok(m) => m,
+        Err(f) => panic!(f.to_string()),
     };
 
     if matches.opt_present("h") {
@@ -29,9 +29,9 @@ pub fn run(args: Vec<String>) {
         match matches.opt_str("e") {
             Some(e) => {
                 println!("{:#?}", parser.parse(e));
-                return
-            },
-            None => print_usage(program, opts)
+                return;
+            }
+            None => print_usage(program, opts),
         }
     }
 
