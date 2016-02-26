@@ -31,3 +31,10 @@ def fact(n) {
     n = n * fact(n - 1)
   }
 }
+
+my_array = [1, 2, 3, 4, 5, 6, 7]
+
+my_map = {
+  "foo": 1,
+  "bar": "baz"
+}
