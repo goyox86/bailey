@@ -12,3 +12,6 @@ path = "runtime"
 
 [dependencies.getopts]
 version = "0.2"
+
+[dependencies.clippy]
+version = "*"

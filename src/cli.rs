@@ -2,7 +2,7 @@ use getopts::Options;
 
 use parser::Parser;
 
-fn print_usage(program: &String, opts: &Options) {
+fn print_usage(program: &str, opts: &Options) {
     let brief = format!("Usage: {} FILE [options]", program);
     print!("{}", opts.usage(&brief));
 }

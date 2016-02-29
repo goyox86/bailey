@@ -1,5 +1,6 @@
 #![feature(plugin)]
 #![plugin(oak)]
+#![plugin(clippy)]
 
 extern crate oak_runtime;
 extern crate getopts;
