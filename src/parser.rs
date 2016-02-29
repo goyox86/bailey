@@ -14,7 +14,7 @@ grammar! bailey {
     use std::str::FromStr;
 
     program
-        = ((expr / decl / stmt) terminator?)* > program
+        = ((decl / stmt) terminator?)* > program
 
     decl
         = class_decl
@@ -35,6 +35,7 @@ grammar! bailey {
     stmt
         = if_stmt
         / while_stmt
+        / expr
 
     if_stmt
         = kw_if expr block (kw_else block)? > if_stmt
