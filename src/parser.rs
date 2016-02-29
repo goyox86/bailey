@@ -320,7 +320,7 @@ impl Parser {
             Ok(file) => {
                 let mut reader = BufReader::new(file);
                 let mut code = String::new();
-                reader.read_to_string(&mut code);
+                let _ = reader.read_to_string(&mut code);
                 self.parse(code)
             }
             Err(error) => Err(format!("Error: {}", error)),
