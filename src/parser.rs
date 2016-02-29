@@ -21,13 +21,13 @@ grammar! bailey {
         / method_decl
 
     class_decl
-        = kw_class constant class_body > class_decl
+        = class_kw constant class_body > class_decl
 
     class_body
         = lbracket method_decl* rbracket
 
     method_decl
-        = kw_def ident lparen param_list rparen block > method_decl
+        = def_kw ident lparen param_list rparen block > method_decl
 
     block
         = lbracket ((stmt / expr) terminator?)* rbracket > block
@@ -38,10 +38,10 @@ grammar! bailey {
         / expr
 
     if_stmt
-        = kw_if expr block (kw_else block)? > if_stmt
+        = if_kw expr block (else_kw block)? > if_stmt
 
     while_stmt
-        = kw_while expr block > while_stmt
+        = while_kw expr block > while_stmt
 
     function_call
         = ident lparen arg_list rparen
@@ -93,43 +93,43 @@ grammar! bailey {
     constant = !keyword !digit ["A-Z"]+ ident_char+ spacing > constant
 
     literal
-        = lit_string
-        / lit_float
-        / lit_int
-        / lit_array
-        / lit_map
+        = string_lit
+        / float_lit
+        / int_lit
+        / array_lit
+        / map_lit
 
-    lit_int = digit+ spacing > lit_int
-    lit_float = digit+ dot digit+ spacing > lit_float
-    lit_string = (dbl_quot_lit_string / sng_quot_lit_string) spacing > lit_string
-    lit_array = lsqbracket expr (comma expr)* rsqbracket > lit_array
+    int_lit = digit+ spacing > int_lit
+    float_lit = digit+ dot digit+ spacing > float_lit
+    string_lit = (dbl_quot_string_lit / sng_quot_string_lit) spacing > string_lit
+    array_lit = lsqbracket expr (comma expr)* rsqbracket > array_lit
 
     map_entry =  (expr colon expr)
-    lit_map = lbracket map_entry (comma map_entry)* rbracket > lit_map
+    map_lit = lbracket map_entry (comma map_entry)* rbracket > map_lit
 
-    dbl_quot_lit_string = dbl_quot (spacing_char / !dbl_quot .)* dbl_quot
-    sng_quot_lit_string = sng_quot (spacing_char / !sng_quot .)* sng_quot
+    dbl_quot_string_lit = dbl_quot (spacing_char / !dbl_quot .)* dbl_quot
+    sng_quot_string_lit = sng_quot (spacing_char / !sng_quot .)* sng_quot
 
     spacing_char = [" \n\r\t"]
     spacing = spacing_char* -> ()
 
-    kw_class = "class" spacing
-    kw_def = "def" spacing
-    kw_else = "else" spacing
-    kw_false = "false" spacing
-    kw_if = "if" spacing
-    kw_nil = "nil" spacing
-    kw_true = "true" spacing
-    kw_while = "while" spacing
+    class_kw = "class" spacing
+    def_kw = "def" spacing
+    else_kw = "else" spacing
+    false_kw = "false" spacing
+    if_kw = "if" spacing
+    nil_kw = "nil" spacing
+    true_kw = "true" spacing
+    while_kw = "while" spacing
 
     keyword
-        = kw_def
-        / kw_if
-        / kw_else
-        / kw_class
-        / kw_true
-        / kw_false
-        / kw_nil
+        = def_kw
+        / if_kw
+        / else_kw
+        / class_kw
+        / true_kw
+        / false_kw
+        / nil_kw
 
     add_expr_op
         = add_op > add_bin_op
@@ -176,24 +176,24 @@ grammar! bailey {
     comma = "," spacing
     colon = ":" spacing
 
-    fn lit_int(raw_text: Vec<char>) -> PNode {
+    fn int_lit(raw_text: Vec<char>) -> PNode {
         PNode(IntLit(to_number(raw_text)))
     }
 
-    fn lit_float(mut integer: Vec<char>, fractional: Vec<char>) -> PNode {
+    fn float_lit(mut integer: Vec<char>, fractional: Vec<char>) -> PNode {
         integer.push('.');
         PNode(FltLit(to_float(combine(integer, fractional))))
     }
 
-    fn lit_string(raw_text: Vec<char>) -> PNode {
+    fn string_lit(raw_text: Vec<char>) -> PNode {
         PNode(StrLit(to_string(raw_text)))
     }
 
-    fn lit_array(first: PNode, rest: Vec<PNode>) -> PNode {
+    fn array_lit(first: PNode, rest: Vec<PNode>) -> PNode {
         PNode(ArrLit(combine_one_with_many(first, rest)))
     }
 
-    fn lit_map(first: (PNode, PNode), rest: Vec<(PNode, PNode)>) -> PNode {
+    fn map_lit(first: (PNode, PNode), rest: Vec<(PNode, PNode)>) -> PNode {
         PNode(MapLit(combine_one_with_many(first, rest)))
     }
 
@@ -240,12 +240,12 @@ grammar! bailey {
         PNode(MethodDecl { meth: meth, params: params, blk: block })
     }
 
-    fn block(stms: Vec<(PNode, Option<()>)>) -> PNode {
-        let stms = stms.into_iter().map(|stmt| {
+    fn block(stmts: Vec<(PNode, Option<()>)>) -> PNode {
+        let stmts = stmts.into_iter().map(|stmt| {
             match stmt { (s, _) => s }
         }).collect();
 
-        PNode(Block(stms))
+        PNode(Block(stmts))
     }
 
     fn program(stmts: Vec<(PNode, Option<()>)>) -> Vec<PNode> {
