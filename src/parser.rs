@@ -30,7 +30,7 @@ grammar! bailey {
         = def_kw ident lparen param_list rparen block > method_decl
 
     block
-        = lbracket ((stmt / expr) terminator?)* rbracket > block
+        = lbracket (stmt terminator?)* rbracket > block
 
     stmt
         = assign_stmt
