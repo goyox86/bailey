@@ -14,7 +14,10 @@ grammar! bailey {
     use std::str::FromStr;
 
     program
-        = ((decl / stmt) terminator?)* > program
+        = (stmt_or_decl terminator?)* > program
+
+    stmt_or_decl
+        = (stmt / decl)
 
     decl
         = class_decl
