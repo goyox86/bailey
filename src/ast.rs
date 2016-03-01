@@ -24,7 +24,7 @@ pub enum Node {
     ArrLit(Vec<PNode>),
     MapLit(Vec<(PNode, PNode)>),
     Block(Vec<PNode>),
-    AssignExpr {
+    AssignStmt {
         var: PNode,
         expr: PNode,
     },
