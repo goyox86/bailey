@@ -33,7 +33,8 @@ grammar! bailey {
         = lbracket ((stmt / expr) terminator?)* rbracket > block
 
     stmt
-        = if_stmt
+        = assign_stmt
+        / if_stmt
         / while_stmt
         / expr
 
@@ -49,8 +50,8 @@ grammar! bailey {
     method_call
         = callable_expr (dot function_call)+
 
-    assign_expr
-        = ident bind_op expr > assign_expr
+    assign_stmt
+        = ident bind_op expr > assign_stmt
 
     expr
         = cond_expr
@@ -65,9 +66,8 @@ grammar! bailey {
         = primary_expr (mult_expr_op primary_expr)* > fold_left
 
     primary_expr
-        = assign_expr
-          / method_call > method_call
-          / callable_expr
+        = method_call > method_call
+        / callable_expr
 
     callable_expr
         = function_call > function_call
@@ -228,8 +228,8 @@ grammar! bailey {
         })
     }
 
-    fn assign_expr(var: PNode, expr: PNode) -> PNode {
-        PNode(AssignExpr { var: var, expr: expr })
+    fn assign_stmt(var: PNode, expr: PNode) -> PNode {
+        PNode(AssignStmt { var: var, expr: expr })
     }
 
     fn class_decl(class: PNode, methods: Vec<PNode>) -> PNode {
