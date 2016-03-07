@@ -34,7 +34,7 @@ grammar! bailey {
         = newlines def_kw ident lparen param_list rparen block > method_decl
 
     block
-        = lbracket (newlines stmt terminator)* rbracket spacing > block
+        = newlines lbracket (newlines stmt terminator)* rbracket spacing > block
 
     stmt
         = assign_stmt
@@ -49,7 +49,7 @@ grammar! bailey {
         = while_kw expr block > while_stmt
 
     function_call
-        = ident lparen arg_list rparen
+        = newlines ident lparen arg_list rparen
 
     method_call
         = callable_expr (dot function_call)+
@@ -171,12 +171,12 @@ grammar! bailey {
     andand_op  = "&&" spacing
     oror_op = "||" spacing
 
-    lparen = "(" spacing
-    rparen = ")" spacing
+    lparen = "(" newlines -> ()
+    rparen = newlines ")" -> ()
     lbracket = "{" newlines -> ()
     rbracket = newlines "}" -> ()
-    lsqbracket = "[" spacing
-    rsqbracket = "]" spacing
+    lsqbracket = "[" newlines
+    rsqbracket = newlines "]"
     dbl_quot = "\"" spacing
     sng_quot = "'" spacing
     dot = "." spacing
