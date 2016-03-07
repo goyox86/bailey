@@ -14,10 +14,11 @@ grammar! bailey {
     use std::str::FromStr;
 
     program
-        = (stmt_or_decl terminator?)* > program
+        = (newlines stmt_or_decl terminator)*
 
     stmt_or_decl
-        = (stmt / decl)
+        = stmt
+        / decl
 
     decl
         = class_decl
@@ -30,10 +31,10 @@ grammar! bailey {
         = lbracket method_decl* rbracket
 
     method_decl
-        = def_kw ident lparen param_list rparen block > method_decl
+        = newlines def_kw ident lparen param_list rparen block > method_decl
 
     block
-        = lbracket (stmt terminator?)* rbracket > block
+        = lbracket (newlines stmt terminator)* rbracket spacing > block
 
     stmt
         = assign_stmt
@@ -57,7 +58,7 @@ grammar! bailey {
         = ident bind_op expr > assign_stmt
 
     expr
-        = cond_expr
+        = newlines cond_expr
 
     cond_expr
         = add_expr (cond_expr_op add_expr)* > fold_left
@@ -113,8 +114,12 @@ grammar! bailey {
     dbl_quot_string_lit = dbl_quot (spacing_char / !dbl_quot .)* dbl_quot
     sng_quot_string_lit = sng_quot (spacing_char / !sng_quot .)* sng_quot
 
-    spacing_char = [" \n\r\t"]
+    spacing_char = [" \r\t"]
     spacing = spacing_char* -> ()
+    newline = "\n" spacing -> ()
+    semicolon = ";" spacing -> ()
+    terminator = newline / semicolon -> ()
+    newlines = newline* spacing -> ()
 
     class_kw = "class" spacing
     def_kw = "def" spacing
@@ -168,13 +173,12 @@ grammar! bailey {
 
     lparen = "(" spacing
     rparen = ")" spacing
-    lbracket = "{" spacing
-    rbracket = "}" spacing
+    lbracket = "{" newlines -> ()
+    rbracket = newlines "}" -> ()
     lsqbracket = "[" spacing
     rsqbracket = "]" spacing
     dbl_quot = "\"" spacing
     sng_quot = "'" spacing
-    terminator = ";" spacing
     dot = "." spacing
     comma = "," spacing
     colon = ":" spacing
@@ -243,18 +247,12 @@ grammar! bailey {
         PNode(MethodDecl { meth: meth, params: params, blk: block })
     }
 
-    fn block(stmts: Vec<(PNode, Option<()>)>) -> PNode {
-        let stmts = stmts.into_iter().map(|stmt| {
-            match stmt { (s, _) => s }
-        }).collect();
-
+    fn block(stmts: Vec<PNode>) -> PNode {
         PNode(Block(stmts))
     }
 
-    fn program(stmts: Vec<(PNode, Option<()>)>) -> Vec<PNode> {
-        stmts.into_iter().map(|stmt| {
-            match stmt { (s, _) => s }
-        }).collect()
+    fn program(first: PNode, mut rest: Vec<PNode>) -> Vec<PNode> {
+        combine_one_with_many(first, rest)
     }
 
     fn if_stmt(cond: PNode, true_blk: PNode, false_blk: Option<PNode>) -> PNode {
