@@ -14,7 +14,7 @@ grammar! bailey {
     use std::str::FromStr;
 
     program
-        = (newlines stmt_or_decl terminator)*
+        = newlines (stmt_or_decl terminator)*
 
     stmt_or_decl
         = stmt
@@ -34,7 +34,10 @@ grammar! bailey {
         = newlines def_kw ident lparen param_list rparen block > method_decl
 
     block
-        = newlines lbracket (newlines stmt terminator)* rbracket spacing > block
+        = newlines lbracket stmt_list rbracket spacing > block
+
+    stmt_list
+        = stmt (terminator stmt)* > stmt_list
 
     stmt
         = assign_stmt
@@ -118,8 +121,8 @@ grammar! bailey {
     spacing = spacing_char* -> ()
     newline = "\n" spacing -> ()
     semicolon = ";" spacing -> ()
-    terminator = newline / semicolon -> ()
     newlines = newline* spacing -> ()
+    terminator = (newline / semicolon) newlines -> ()
 
     class_kw = "class" spacing
     def_kw = "def" spacing
@@ -268,6 +271,10 @@ grammar! bailey {
     }
 
     fn param_list(first: PNode, mut rest: Vec<PNode>) -> Vec<PNode> {
+        combine_one_with_many(first, rest)
+    }
+
+    fn stmt_list(first: PNode, mut rest: Vec<PNode>) -> Vec<PNode> {
         combine_one_with_many(first, rest)
     }
 

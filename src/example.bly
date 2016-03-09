@@ -1,3 +1,6 @@
+
+
+
 class Awesome {
   def does_it_work() {
     "yeah!"
@@ -9,7 +12,7 @@ class Awesome {
     while i < n {
       print(i);
 
-      i = i + 1;
+      i = i + 1
     }
   }
 }
@@ -18,7 +21,7 @@ awesome_object = Awesome.new()
 awesome_float = 10.2
 
 if awesome_object {
-  print('awesome_object.does_it_work = ')
+  print('awesome_object.does_it_work = ');
   print(awesome_object.does_it_work())
 }
 
@@ -41,3 +44,66 @@ my_map = {
     "wohoo": 10.2
   }
 }
+
+
+class Awesome {
+  def does_it_work() {
+    "yeah!"
+  }
+
+  def count_to(n) {
+    i = 0;
+
+    while i < n {
+      print(i);
+
+      i = i + 1
+    }
+  }
+}
+
+awesome_float = 10.2
+
+if awesome_object {
+
+  print('awesome_object.does_it_work = ');
+  print(awesome_object.does_it_work());
+  1
+}
+
+awesome_object = 2 +                    Awesome.new()
+
+def fact(n) {
+  if n == 0 { 1 } else { n = n * fact(n - 1) }
+}
+
+my_array = [1,
+
+2,
+3,
+4, 5, 6, 7]
+
+my_map = {
+
+
+  "foo":     1,
+  "bar":     "baz",
+  "nested": {
+          "wohoo": 10.2
+  }
+
+
+}
+1
+
+
+1;2; a + b; foo(1); if a + b { "boo" }
+
+1
+2
+3
+4
+5
+6
+7
+8
