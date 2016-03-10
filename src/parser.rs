@@ -28,16 +28,17 @@ grammar! bailey {
         = class_kw constant class_body > class_decl
 
     class_body
-        = lbracket method_decl* rbracket
+        = lbracket (newlines method_decl)* rbracket
 
     method_decl
-        = newlines def_kw ident lparen param_list rparen block > method_decl
+        = def_kw ident lparen param_list rparen block > method_decl
 
     block
         = newlines lbracket stmt_list rbracket spacing > block
 
     stmt_list
-        = stmt (terminator stmt)* > stmt_list
+        = empty_stmt_list
+        / stmt (terminator stmt)* > stmt_list
 
     stmt
         = assign_stmt
@@ -92,6 +93,7 @@ grammar! bailey {
         / ident (comma ident)* > param_list
 
     empty_list = &rparen > empty_list
+    empty_stmt_list = &rbracket > empty_stmt_list
 
     digit = ["0-9"]
     ident_char = ["A-Za-z0-9_"]
@@ -279,6 +281,10 @@ grammar! bailey {
     }
 
     fn empty_list() -> Vec<PNode> {
+        vec![]
+    }
+
+    fn empty_stmt_list() -> Vec<PNode> {
         vec![]
     }
 
