@@ -1,0 +1,126 @@
+use std::str::FromStr;
+
+use ast::BinOp::*;
+use ast::Node::BinExpr;
+use ast::Node::IntLit;
+use ast::Node::FltLit;
+use ast::Node::StrLit;
+use ast::Node::ArrLit;
+use ast::Node::MapLit;
+use ast::Node::Const;
+use ast::Node::Ident;
+use ast::Node::Message;
+use ast::PNode;
+
+grammar;
+
+pub expr_list: Vec<PNode> = {
+    <v:(<expr> ",")*> <e:expr?> => match e {
+        None => v,
+        Some(e) => {
+            let mut v = v;
+            v.push(e);
+            v
+        }
+    }
+};
+
+pub expr: PNode = {
+    <l:expr> "<" <r:add_expr> => PNode(BinExpr { op: Lt, left: l, right: r }),
+    <l:expr> "<=" <r:add_expr> => PNode(BinExpr { op: Lte, left: l, right: r }),
+    <l:expr> ">" <r:add_expr> => PNode(BinExpr { op: Gt, left: l, right: r }),
+    <l:expr> ">=" <r:add_expr> => PNode(BinExpr { op: Gte, left: l, right: r }),
+    <l:expr> "!=" <r:add_expr> => PNode(BinExpr { op: Ne, left: l, right: r }),
+    <l:expr> "==" <r:add_expr> => PNode(BinExpr { op: Eq, left: l, right: r }),
+    <l:expr> "&&" <r:add_expr> => PNode(BinExpr { op: And, left: l, right: r }),
+    <l:expr> "||" <r:add_expr> => PNode(BinExpr { op: Or, left: l, right: r }),
+    add_expr,
+};
+
+add_expr: PNode = {
+    <l:add_expr> "+" <r:mult_expr> => PNode(BinExpr { op: Add, left: l, right: r }),
+    <l:add_expr> "-" <r:mult_expr> => PNode(BinExpr { op: Sub, left: l, right: r }),
+    mult_expr,
+};
+
+mult_expr: PNode = {
+    <l:mult_expr> "*" <r:primary_expr> => PNode(BinExpr { op: Mul, left: l, right: r }),
+    <l:mult_expr> "/" <r:primary_expr> => PNode(BinExpr { op: Div, left: l, right: r }),
+    primary_expr
+};
+
+primary_expr: PNode = {
+    method_call,
+    callable_expr,
+};
+
+callable_expr = {
+    function_call,
+    literal,
+    constant,
+    ident,
+    "(" <expr> ")"
+};
+
+function_call: PNode = {
+     <meth:ident> "(" <args:expr_list> ")" => {
+         PNode(Message { recv: None, meth: meth, args: args, })
+     }
+};
+
+method_call: PNode = {
+     <recv:callable_expr> "." <meth:ident> "(" <args:expr_list> ")" => {
+         PNode(Message { recv: Some(recv), meth: meth, args: args, })
+     }
+};
+
+literal = {
+    //string_lit,
+    int_lit,
+    float_lit,
+    array_lit,
+    map_lit
+};
+
+constant: PNode = {
+    r"[A-Z]([a-z_])*" => PNode(Const(String::from_str(<>).unwrap()))
+};
+
+ident: PNode = {
+    r"[a-z_]+" => PNode(Ident(String::from_str(<>).unwrap()))
+};
+
+int_lit: PNode = {
+    r"[0-9]+" => PNode(IntLit(i64::from_str(<>).unwrap()))
+};
+
+float_lit: PNode = {
+    r"([0-9]+)\.([0-9]+)" => PNode(FltLit(f64::from_str(<>).unwrap()))
+};
+
+// string_lit: PNode = {
+//     r#"(.|[^"])*"# => PNode(StrLit(String::from_str(<>).unwrap()))
+// };
+
+array_lit: PNode = {
+    "[" <expr_list> "]" => PNode(ArrLit(<>))
+};
+
+map_entry: (PNode, PNode) = {
+    <k:expr> ":" <v:expr> => (k, v)
+};
+
+map_entry_list: Vec<(PNode, PNode)> = {
+    <v:(<map_entry> ",")*> <e:map_entry?> => match e {
+        None => v,
+        Some(e) => {
+            let mut v = v;
+            v.push(e);
+            v
+        }
+    }
+};
+
+map_lit: PNode = {
+    "{" <map_entry_list> "}" => PNode(MapLit(<>))
+};

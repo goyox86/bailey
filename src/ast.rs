@@ -18,7 +18,7 @@ pub enum BinOp {
 pub enum Node {
     Ident(String),
     Const(String),
-    IntLit(u64),
+    IntLit(i64),
     FltLit(f64),
     StrLit(String),
     ArrLit(Vec<PNode>),
