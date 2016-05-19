@@ -357,3 +357,152 @@ impl Parser {
         }
     }
 }
+
+mod tests {
+    use super::*;
+    use ast::PNode;
+    use ast::Node::*;
+    use ast::BinOp::*;
+
+    #[test]
+    fn test_parse_int_lit() {
+        let mut parser = Parser::new();
+        let code = "42;".to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![PNode(IntLit(42))]);
+    }
+
+    #[test]
+    fn test_parse_float_lit() {
+        let mut parser = Parser::new();
+        let code = "42.00;".to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![PNode(FltLit(42.00))]);
+    }
+
+    #[test]
+    fn test_parse_string_lit() {
+        let mut parser = Parser::new();
+        let code = "\"fooooo\";".to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![PNode(StrLit("fooooo".to_string()))]);
+    }
+
+    #[test]
+    fn test_parse_array_lit() {
+        let mut parser = Parser::new();
+        let code = "[1, 2, 3];".to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![PNode(
+            ArrLit(vec![
+                PNode(IntLit(1)),
+                PNode(IntLit(2)),
+                PNode(IntLit(3))
+            ])
+        )]);
+    }
+
+    #[test]
+    fn test_parse_map_lit() {
+        let mut parser = Parser::new();
+        let code = "{a: 1, b: 2};".to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![PNode(
+            MapLit(vec![
+                (PNode(Ident("a".to_string())), PNode(IntLit(1))),
+                (PNode(Ident("b".to_string())), PNode(IntLit(2)))
+            ])
+        )]);
+    }
+
+    #[test]
+    fn test_parse_const() {
+        let mut parser = Parser::new();
+        let code = "Awesome;".to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![PNode(Const("Awesome".to_string()))]);
+    }
+
+    #[test]
+    fn test_parse_ident()  {
+        let mut parser = Parser::new();
+        let code = "foo;".to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![PNode(Ident("foo".to_string()))]);
+    }
+
+    #[test]
+    fn test_parse_method_no_args() {
+        let mut parser = Parser::new();
+        let code = "def method1() { };".to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![
+            PNode(MethodDecl {
+                    meth: PNode(Ident("method1".to_string())),
+                    params: vec![],
+                    blk: PNode(Block(vec![]))
+            })
+        ]);
+    }
+
+    #[test]
+    fn test_parse_method() {
+        let mut parser = Parser::new();
+        let code = "def method2(arg1, arg2) { };".to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![
+            PNode(MethodDecl {
+                    meth: PNode(Ident("method2".to_string())),
+                    params: vec![
+                        PNode(Ident("arg1".to_string())),
+                        PNode(Ident("arg2".to_string()))
+                    ],
+                    blk: PNode(Block(vec![]))
+                }
+            )
+        ]);
+    }
+
+    #[test]
+    fn test_parse_method_with_body() {
+        let mut parser = Parser::new();
+        let code = r#"
+            def method3(arg1, arg2) {
+                arg1 + arg2
+            };
+        "#.to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![
+            PNode(MethodDecl {
+                    meth: PNode(Ident("method3".to_string())),
+                    params: vec![
+                        PNode(Ident("arg1".to_string())),
+                        PNode(Ident("arg2".to_string()))
+                    ],
+                    blk: PNode(Block(vec![
+                        PNode(BinExpr {
+                            op: Add,
+                            left: PNode(Ident("arg1".to_string())),
+                            right: PNode(Ident("arg2".to_string()))
+                        })
+                    ]))
+                }
+            )
+        ]);
+    }
+
+    #[test]
+    fn test_parse_class() {
+        let mut parser = Parser::new();
+        let code = r#"
+            class TestClass { }
+        "#.to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![
+            PNode(ClassDecl {
+                class: PNode(Const("TestClass".to_string())),
+                meths: vec![]
+            })
+        ]);
+    }
+}
