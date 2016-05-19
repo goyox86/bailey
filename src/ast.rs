@@ -1,4 +1,4 @@
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum BinOp {
     Add,
     Sub,
@@ -14,7 +14,7 @@ pub enum BinOp {
     Or,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Node {
     Ident(String),
     Const(String),
