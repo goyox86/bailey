@@ -505,4 +505,111 @@ mod tests {
             })
         ]);
     }
+
+    #[test]
+    fn test_parse_assign_stmt() {
+        let mut parser = Parser::new();
+        let code = r#"
+            foo = 4 - 2
+        "#.to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![
+            PNode(AssignStmt {
+                var: PNode(Ident("foo".to_string())),
+                expr: PNode(BinExpr {
+                    op: Sub,
+                    left: PNode(IntLit(4)),
+                    right: PNode(IntLit(2))
+                }),
+            },)
+        ]);
+    }
+
+    #[test]
+    fn test_parse_bin_expr() {
+        let mut parser = Parser::new();
+        let code = r#"
+            4.0 * 2
+        "#.to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![
+            PNode(BinExpr {
+                op: Mul,
+                left: PNode(FltLit(4.0)),
+                right: PNode(IntLit(2))
+            }),
+        ]);
+    }
+
+    #[test]
+    fn test_parse_msg_recv_no_args() {
+        let mut parser = Parser::new();
+        let code = r#"
+            1.foo()
+        "#.to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![
+            PNode(Message {
+                recv: Some(PNode(IntLit(1))),
+                meth: PNode(Ident("foo".to_string())),
+                args: vec![],
+            }),
+        ]);
+    }
+
+    #[test]
+    fn test_parse_msg_recv_args() {
+        let mut parser = Parser::new();
+        let code = r#"
+            1.bar(2, "baz", 2.0)
+        "#.to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![
+            PNode(Message {
+                recv: Some(PNode(IntLit(1))),
+                meth: PNode(Ident("bar".to_string())),
+                args: vec![
+                    PNode(IntLit(2)),
+                    PNode(StrLit("baz".to_string())),
+                    PNode(FltLit(2.0))
+                ],
+            }),
+        ]);
+    }
+
+    #[test]
+    fn test_parse_msg_no_recv_no_args() {
+        let mut parser = Parser::new();
+        let code = r#"
+            bar()
+        "#.to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![
+            PNode(Message {
+                recv: None,
+                meth: PNode(Ident("bar".to_string())),
+                args: vec![],
+            }),
+        ]);
+    }
+
+    #[test]
+    fn test_parse_msg_no_recv_args() {
+        let mut parser = Parser::new();
+        let code = r#"
+            quux(2, "baz", 2.0)
+        "#.to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![
+            PNode(Message {
+                recv: None,
+                meth: PNode(Ident("quux".to_string())),
+                args: vec![
+                    PNode(IntLit(2)),
+                    PNode(StrLit("baz".to_string())),
+                    PNode(FltLit(2.0))
+                ],
+            }),
+        ]);
+    }
 }
