@@ -612,4 +612,105 @@ mod tests {
             }),
         ]);
     }
+
+    #[test]
+    fn test_parse_while_stmt() {
+        let mut parser = Parser::new();
+        let code = r#"
+            while i < n {
+                i = i + 1
+            }
+        "#.to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![
+            PNode(
+                WhileStmt {
+                    cond: PNode(BinExpr {
+                        op: Lt,
+                        left: PNode(Ident("i".to_string())),
+                        right: PNode(Ident("n".to_string()))
+                    }),
+                    blk: PNode(Block(vec![
+                        PNode(AssignStmt {
+                            var: PNode(Ident("i".to_string())),
+                            expr: PNode(BinExpr {
+                                op: Add,
+                                left: PNode(Ident("i".to_string())),
+                                right: PNode(IntLit(1))
+                            }),
+                        })
+                    ])),
+                }
+            ),
+        ]);
+    }
+
+    #[test]
+    fn test_parse_if_stmt() {
+        let mut parser = Parser::new();
+        let code = r#"
+            if n == 0 {
+                1
+            }
+        "#.to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![
+            PNode(IfStmt {
+                cond: PNode(BinExpr {
+                    op: Eq,
+                    left: PNode(Ident("n".to_string())),
+                    right: PNode(IntLit(0))
+                }),
+                true_blk: PNode(Block(vec![
+                    PNode(IntLit(1))
+                ])),
+                false_blk: None
+            })
+        ]);
+    }
+
+    #[test]
+    fn test_parse_if_else_stmt() {
+        let mut parser = Parser::new();
+        let code = r#"
+            if n == 0 {
+                1
+            } else {
+                n = n * fact(n - 1)
+            }
+        "#.to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![
+            PNode(IfStmt {
+                cond: PNode(BinExpr {
+                    op: Eq,
+                    left: PNode(Ident("n".to_string())),
+                    right: PNode(IntLit(0))
+                }),
+                true_blk: PNode(Block(vec![
+                    PNode(IntLit(1))
+                ])),
+                false_blk: Some(PNode(Block(vec![
+                    PNode(AssignStmt {
+                        var: PNode(Ident("n".to_string())),
+                        expr: PNode(BinExpr {
+                            op: Mul,
+                            left: PNode(Ident("n".to_string())),
+                            right: PNode(Message {
+                                recv: None,
+                                meth: PNode(Ident("fact".to_string())),
+                                args: vec![
+                                    PNode(BinExpr {
+                                        op: Sub,
+                                        left: PNode(Ident("n".to_string())),
+                                        right: PNode(IntLit(1))
+                                    })
+                                ],
+                            })
+                        }),
+                    })
+                ])))
+            })
+        ]);
+    }
 }
