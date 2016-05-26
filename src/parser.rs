@@ -44,6 +44,7 @@ grammar! bailey {
         = assign_stmt
         / if_stmt
         / while_stmt
+        / block
         / expr
 
     if_stmt
@@ -429,6 +430,30 @@ mod tests {
         let code = "foo;".to_string();
         let ast = parser.parse(code).unwrap();
         assert_eq!(ast, vec![PNode(Ident("foo".to_string()))]);
+    }
+
+    #[test]
+    fn test_parse_block() {
+        let mut parser = Parser::new();
+        let code = r#"
+            {
+                1
+                2 / 3
+            }
+        "#.to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![
+            PNode(Block(
+                vec![
+                    PNode(IntLit(1)),
+                    PNode(BinExpr {
+                        op: Div,
+                        left: PNode(IntLit(2)),
+                        right: PNode(IntLit(3))
+                    })
+                ]
+            ))
+        ]);
     }
 
     #[test]
