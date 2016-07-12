@@ -22,7 +22,8 @@ grammar! bailey {
         = newlines (stmt terminator)*
 
     stmt
-        = assign_stmt
+        = const_assign_stmt
+        / assign_stmt
         / if_stmt
         / while_stmt
         / decl > decl_to_stmt
@@ -30,6 +31,9 @@ grammar! bailey {
 
     assign_stmt
         = var bind_op expr > assign_stmt
+
+    const_assign_stmt
+        = constant bind_op expr > const_assign_stmt
 
     if_stmt
         = if_kw expr block (else_kw block)? > if_stmt
@@ -271,7 +275,11 @@ grammar! bailey {
     }
 
     fn assign_stmt(var: Expr, expr: Expr) -> Stmt {
-        Stmt::Assign(Box::new(var), Box::new(expr))
+        Stmt::VarAssign(Box::new(var), Box::new(expr))
+    }
+
+    fn const_assign_stmt(constant: Expr, expr: Expr) -> Stmt {
+        Stmt::ConstAssign(Box::new(constant), Box::new(expr))
     }
 
     fn class_decl(class: Ident, methods: Vec<Decl>) -> Decl {
