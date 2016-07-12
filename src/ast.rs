@@ -28,7 +28,8 @@ pub enum UnOp {
 pub enum Stmt {
     Decl(Box<Decl>),
     Expr(Box<Expr>),
-    Assign(Box<Expr>, Box<Expr>), 
+    VarAssign(Box<Expr>, Box<Expr>),
+    ConstAssign(Box<Expr>, Box<Expr>),
     If(Box<Expr>, Box<Block>, Option<Box<Block>>),
     While(Box<Expr>, Box<Block>) 
 }
