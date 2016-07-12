@@ -102,12 +102,11 @@ grammar! bailey {
         / ident (comma ident)* > param_list
 
     empty_list = &rparen > empty_list
+    empty_param_list = &rparen > empty_param_list
     empty_stmt_list = &rbracket > empty_stmt_list
-    empty_param_list = &rbracket > empty_param_list
 
     digit = ["0-9"]
     ident_char = ["A-Za-z0-9_"]
-
     
     var = !digit !keyword ident_char+ spacing > var
     ident = !digit !keyword ident_char+ spacing > ident
