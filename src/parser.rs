@@ -291,10 +291,12 @@ grammar! bailey {
     }
 
     fn if_stmt(cond: Expr, true_blk: Block, false_blk: Option<Block>) -> Stmt {
-        match false_blk {
-            Some(blk) => Stmt::If(Box::new(cond), Box::new(true_blk), Some(Box::new(blk))),
-            None => Stmt::If(Box::new(cond), Box::new(true_blk), None)  
-        }
+        let false_blk = match false_blk {
+            Some(blk) => Some(Box::new(blk)),
+            None => None
+        };
+
+        Stmt::If(Box::new(cond), Box::new(true_blk), false_blk)
     }
 
     fn while_stmt(cond: Expr, blk: Block) -> Stmt {
