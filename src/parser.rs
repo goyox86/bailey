@@ -14,18 +14,28 @@ grammar! bailey {
     use ast::Stmt;
     use ast::BinOp;
     use ast::Decl;
-    use ast::MethodDecl;
-    use ast::ClassDecl;
     use ast::Block;
     use ast::BinOp::*;
     use std::str::FromStr;
 
     program
-        = newlines (stmt_or_decl terminator)*
+        = newlines (stmt terminator)*
 
-    stmt_or_decl
-        = stmt
+    stmt
+        = assign_stmt
+        / if_stmt
+        / while_stmt
         / decl > decl_to_stmt
+        / expr > expr_to_stmt
+
+    assign_stmt
+        = var bind_op expr > assign_stmt
+
+    if_stmt
+        = if_kw expr block (else_kw block)? > if_stmt
+
+    while_stmt
+        = while_kw expr block > while_stmt
 
     decl
         = class_decl
@@ -47,26 +57,11 @@ grammar! bailey {
         = empty_stmt_list
         / stmt (terminator stmt)* > stmt_list
 
-    stmt
-        = assign_stmt
-        / if_stmt
-        / while_stmt
-        / expr > expr_to_stmt
-
-    if_stmt
-        = if_kw expr block (else_kw block)? > if_stmt
-
-    while_stmt
-        = while_kw expr block > while_stmt
-
     function_call
         = newlines ident lparen arg_list rparen
 
     method_call
         = callable_expr (dot function_call)+
-
-    assign_stmt
-        = var bind_op expr > assign_stmt
 
     expr
         = newlines cond_expr 
@@ -280,11 +275,11 @@ grammar! bailey {
     }
 
     fn class_decl(class: Ident, methods: Vec<Decl>) -> Decl {
-        Decl::ClassDecl(Box::new(ClassDecl(class, methods)))
+        Decl::Class(class, methods)
     }
 
     fn method_decl(meth: Ident, params: Vec<Ident>, block: Block) -> Decl {
-        Decl::MethodDecl(Box::new(MethodDecl(meth, params, Box::new(block))))
+        Decl::Method(meth, params, Box::new(block))
     }
 
     fn block(stmts: Vec<Stmt>) -> Block {

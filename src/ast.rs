@@ -26,8 +26,8 @@ pub enum UnOp {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Stmt {
-    Expr(Box<Expr>),
     Decl(Box<Decl>),
+    Expr(Box<Expr>),
     Assign(Box<Expr>, Box<Expr>), 
     If(Box<Expr>, Box<Block>, Option<Box<Block>>),
     While(Box<Expr>, Box<Block>) 
@@ -35,15 +35,9 @@ pub enum Stmt {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Decl {
-    ClassDecl(Box<ClassDecl>),
-    MethodDecl(Box<MethodDecl>)
+    Method(Ident, Vec<Ident>, Box<Block>),
+    Class(Ident, Vec<Decl>)
 }
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct MethodDecl(pub Ident, pub Vec<Ident>, pub Box<Block>);
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct ClassDecl(pub Ident, pub Vec<Decl>);
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
