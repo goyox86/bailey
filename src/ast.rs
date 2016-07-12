@@ -1,3 +1,7 @@
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Ident(pub String);
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum BinOp {
     Add,
@@ -15,52 +19,55 @@ pub enum BinOp {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Node {
-    Ident(String),
-    Const(String),
-    IntLit(u64),
-    FltLit(f64),
-    StrLit(String),
-    ArrLit(Vec<PNode>),
-    MapLit(Vec<(PNode, PNode)>),
-    Block(Vec<PNode>),
-    AssignStmt {
-        var: PNode,
-        expr: PNode,
-    },
-    BinExpr {
-        op: BinOp,
-        left: PNode,
-        right: PNode,
-    },
-    Message {
-        recv: Option<PNode>,
-        meth: PNode,
-        args: Vec<PNode>,
-    },
-    WhileStmt {
-        cond: PNode,
-        blk: PNode,
-    },
-    IfStmt {
-        cond: PNode,
-        true_blk: PNode,
-        false_blk: Option<PNode>,
-    },
-    ClassDecl {
-        class: PNode,
-        meths: Vec<PNode>,
-    },
-    MethodDecl {
-        meth: PNode,
-        params: Vec<PNode>,
-        blk: PNode,
-    },
+pub enum UnOp {
+    Not,
+    Neg
 }
 
-pub type PNode = Box<Node>;
-
-#[allow(non_snake_case)]
-pub fn PNode(value: Node) -> PNode {
-    Box::new(value)
+#[derive(Debug, Clone, PartialEq)]
+pub enum Stmt {
+    Expr(Box<Expr>),
+    Decl(Box<Decl>),
+    Assign(Box<Expr>, Box<Expr>), 
+    If(Box<Expr>, Box<Block>, Option<Box<Block>>),
+    While(Box<Expr>, Box<Block>) 
 }
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Decl {
+    ClassDecl(Box<ClassDecl>),
+    MethodDecl(Box<MethodDecl>)
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct MethodDecl(pub Ident, pub Vec<Ident>, pub Box<Block>);
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ClassDecl(pub Ident, pub Vec<Decl>);
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Expr {
+    Var(Ident),
+    Const(Ident),
+    Binary(BinOp, Box<Expr>, Box<Expr>),
+    Unary(UnOp, Box<Expr>),
+    Message(Option<Box<Expr>>, Ident, Vec<Expr>),   
+    Array(Vec<Box<Expr>>),
+    Map(Vec<(Box<Expr>, Box<Expr>)>),
+    Literal(Box<Literal>)
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Literal {
+    Integer(i64),
+    Float(f64),
+    Str(String),
+    Bool(bool)
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Block {
+    pub stmts: Vec<Stmt>
+}
+
+
