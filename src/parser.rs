@@ -105,11 +105,13 @@ grammar! bailey {
     empty_stmt_list = &rbracket > empty_stmt_list
 
     digit = ["0-9"]
-    ident_char = ["A-Za-z0-9_"]
+    upcase_ltr = ["A-Z"]
+    lowcase_ltr = ["a-z_"]
+    ident_char = (upcase_ltr / lowcase_ltr / digit)
     
-    var = !digit !keyword ident_char+ spacing > var
+    var = !digit !keyword &lowcase_ltr ident_char+ spacing > var
     ident = !digit !keyword ident_char+ spacing > ident
-    constant = !keyword !digit ["A-Z"]+ ident_char+ spacing > constant
+    constant = !keyword !digit &upcase_ltr ident_char+ spacing > constant
 
     literal
         = string_lit
@@ -239,8 +241,8 @@ grammar! bailey {
         (Box::new(key), Box::new(val))
     }
 
-    fn constant(first: Vec<char>, rest: Vec<char>) -> Expr {
-        Expr::Const(Ident(to_string(combine(first, rest))))
+    fn constant(raw_text: Vec<char>) -> Expr {
+        Expr::Const(Ident(to_string(raw_text)))
     }
 
     fn ident(raw_text: Vec<char>) -> Ident {
