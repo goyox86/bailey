@@ -23,30 +23,30 @@ pub enum UnOp {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Stmt {
-    Decl(Box<Decl>),
-    Expr(Box<Expr>),
-    VarAssign(Box<Ident>, Box<Expr>),
-    ConstAssign(Box<Ident>, Box<Expr>),
-    If(Box<Expr>, Box<Block>, Option<Box<Block>>),
-    While(Box<Expr>, Box<Block>) 
+    Decl(P<Decl>),
+    Expr(P<Expr>),
+    VarAssign(P<Ident>, P<Expr>),
+    ConstAssign(P<Ident>, P<Expr>),
+    If(P<Expr>, P<Block>, Option<P<Block>>),
+    While(P<Expr>, P<Block>) 
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Decl {
-    Method(Ident, Vec<Ident>, Box<Block>),
-    Class(Box<Ident>, Vec<Decl>)
+    Method(P<Ident>, Vec<Ident>, P<Block>),
+    Class(P<Ident>, Vec<Decl>)
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
-    Var(Box<Ident>),
-    Const(Box<Ident>),
-    Binary(BinOp, Box<Expr>, Box<Expr>),
-    Unary(UnOp, Box<Expr>),
-    Message(Option<Box<Expr>>, Ident, Vec<Expr>),   
-    Array(Vec<Box<Expr>>),
-    Map(Vec<(Box<Expr>, Box<Expr>)>),
-    Literal(Box<Literal>)
+    Var(P<Ident>),
+    Const(P<Ident>),
+    Binary(BinOp, P<Expr>, P<Expr>),
+    Unary(UnOp, P<Expr>),
+    Message(Option<P<Expr>>, P<Ident>, Vec<Expr>),
+    Array(Vec<P<Expr>>),
+    Map(Vec<(P<Expr>, P<Expr>)>),
+    Literal(P<Literal>)
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -67,4 +67,10 @@ pub enum Ident {
     Const(String),
     Var(String),
     Meth(String)
+}
+
+pub type P<T> = Box<T>;
+
+pub fn P<T>(value: T) -> P<T> {
+    Box::new(value)
 }

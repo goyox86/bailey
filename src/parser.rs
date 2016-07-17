@@ -16,6 +16,7 @@ grammar! bailey {
     use ast::BinOp;
     use ast::Block;
     use ast::BinOp::*;
+    use ast::P;
     use std::str::FromStr;
 
     program
@@ -207,15 +208,15 @@ grammar! bailey {
     colon = ":" spacing
 
     fn decl_to_stmt(decl: Decl) -> Stmt {
-        Stmt::Decl(Box::new(decl))
+        Stmt::Decl(P(decl))
     }
     
     fn expr_to_stmt(expr: Expr) -> Stmt {
-        Stmt::Expr(Box::new(expr))
+        Stmt::Expr(P(expr))
     }
 
     fn lit_to_exp(literal: Literal) -> Expr {
-        Expr::Literal(Box::new(literal))
+        Expr::Literal(P(literal))
     }
     
     fn int_lit(raw_text: Vec<char>) -> Literal {
@@ -231,24 +232,24 @@ grammar! bailey {
         Literal::Str(to_string(raw_text))
     }
 
-    fn array(first: Box<Expr>, rest: Vec<Box<Expr>>) -> Expr {
+    fn array(first: P<Expr>, rest: Vec<P<Expr>>) -> Expr {
         Expr::Array(combine_one_with_many(first, rest))
     }
 
-    fn array_elem(expr: Expr) -> Box<Expr> {
-        Box::new(expr)
+    fn array_elem(expr: Expr) -> P<Expr> {
+        P(expr)
     }
 
-    fn map(first: (Box<Expr>, Box<Expr>), rest: Vec<(Box<Expr>, Box<Expr>)>) -> Expr {
+    fn map(first: (P<Expr>, P<Expr>), rest: Vec<(P<Expr>, P<Expr>)>) -> Expr {
         Expr::Map(combine_one_with_many(first, rest))
     }
 
-    fn map_entry(key: Expr, val: Expr) -> (Box<Expr>, Box<Expr>) {
-        (Box::new(key), Box::new(val))
+    fn map_entry(key: Expr, val: Expr) -> (P<Expr>, P<Expr>) {
+        (P(key), P(val))
     }
 
     fn const_expr(ident: Ident) -> Expr {
-        Expr::Const(Box::new(ident))
+        Expr::Const(P(ident))
     }
 
     fn const_ident(raw_text: Vec<char>) -> Ident {
@@ -256,7 +257,7 @@ grammar! bailey {
     }
 
     fn var_expr(ident: Ident) -> Expr {
-        Expr::Var(Box::new(ident))
+        Expr::Var(P(ident))
     }
 
     fn var_ident(raw_text: Vec<char>) -> Ident {
@@ -266,7 +267,6 @@ grammar! bailey {
     fn meth_ident(raw_text: Vec<char>) -> Ident {
         Ident::Meth(to_string(raw_text))
     }
-
 
     fn add_bin_op() -> BinOp { Add }
     fn sub_bin_op() -> BinOp { Sub }
@@ -282,29 +282,29 @@ grammar! bailey {
     fn or_bin_op() -> BinOp { Or }
 
     fn function_call(func: Ident, args: Vec<Expr>) -> Expr {
-        Expr::Message(None, func, args)
+        Expr::Message(None, P(func), args)
     }
 
     fn method_call(recv: Expr, call: Vec<(Ident, Vec<Expr>)>) -> Expr {
         call.into_iter().fold(recv, { |accu, (method, args)|
-            Expr::Message(Some(Box::new(accu)), method, args)
+            Expr::Message(Some(P(accu)), P(method), args)
         })
     }
 
     fn assign_stmt(var: Ident, expr: Expr) -> Stmt {
-        Stmt::VarAssign(Box::new(var), Box::new(expr))
+        Stmt::VarAssign(P(var), P(expr))
     }
 
     fn const_assign_stmt(constant: Ident, expr: Expr) -> Stmt {
-        Stmt::ConstAssign(Box::new(constant), Box::new(expr))
+        Stmt::ConstAssign(P(constant), P(expr))
     }
 
     fn class_decl(class: Ident, methods: Vec<Decl>) -> Decl {
-        Decl::Class(Box::new(class), methods)
+        Decl::Class(P(class), methods)
     }
 
     fn method_decl(meth: Ident, params: Vec<Ident>, block: Block) -> Decl {
-        Decl::Method(meth, params, Box::new(block))
+        Decl::Method(P(meth), params, P(block))
     }
 
     fn block(stmts: Vec<Stmt>) -> Block {
@@ -317,15 +317,15 @@ grammar! bailey {
 
     fn if_stmt(cond: Expr, true_blk: Block, false_blk: Option<Block>) -> Stmt {
         let false_blk = match false_blk {
-            Some(blk) => Some(Box::new(blk)),
+            Some(blk) => Some(P(blk)),
             None => None
         };
 
-        Stmt::If(Box::new(cond), Box::new(true_blk), false_blk)
+        Stmt::If(P(cond), P(true_blk), false_blk)
     }
 
     fn while_stmt(cond: Expr, blk: Block) -> Stmt {
-        Stmt::While(Box::new(cond), Box::new(blk))
+        Stmt::While(P(cond), P(blk))
     }
 
     fn arg_list(first: Expr, mut rest: Vec<Expr>) -> Vec<Expr> {
@@ -366,7 +366,7 @@ grammar! bailey {
 
     fn fold_left(head: Expr, rest: Vec<(BinOp, Expr)>) -> Expr {
         rest.into_iter().fold(head,
-          |accu, (op, expr)| Expr::Binary(op, Box::new(accu), Box::new(expr)))
+          |accu, (op, expr)| Expr::Binary(op, P(accu), P(expr)))
     }
 
     fn combine<T: Clone>(mut left: Vec<T>, right: Vec<T>) -> Vec<T> {
