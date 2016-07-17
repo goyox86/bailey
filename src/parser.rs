@@ -12,8 +12,8 @@ grammar! bailey {
     use ast::Literal;
     use ast::Expr;
     use ast::Stmt;
-    use ast::BinOp;
     use ast::Decl;
+    use ast::BinOp;
     use ast::Block;
     use ast::BinOp::*;
     use std::str::FromStr;
@@ -30,10 +30,10 @@ grammar! bailey {
         / expr > expr_to_stmt
 
     assign_stmt
-        = var bind_op expr > assign_stmt
+        = var_ident bind_op expr > assign_stmt
 
     const_assign_stmt
-        = constant bind_op expr > const_assign_stmt
+        = const_ident bind_op expr > const_assign_stmt
 
     if_stmt
         = if_kw expr block (else_kw block)? > if_stmt
@@ -46,13 +46,13 @@ grammar! bailey {
         / method_decl
 
     class_decl
-        = class_kw ident class_body > class_decl
+        = class_kw const_ident class_body > class_decl
 
     class_body
         = lbracket (newlines method_decl)* rbracket
 
     method_decl
-        = def_kw ident lparen param_list rparen block > method_decl
+        = def_kw meth_ident lparen param_list rparen block > method_decl
 
     block
         = newlines lbracket stmt_list rbracket spacing > block
@@ -62,13 +62,19 @@ grammar! bailey {
         / stmt (terminator stmt)* > stmt_list
 
     function_call
-        = newlines ident lparen arg_list rparen
+        = newlines meth_ident lparen arg_list rparen
 
     method_call
         = callable_expr (dot function_call)+
 
     expr
         = newlines cond_expr 
+
+    var_expr
+        = var_ident > var_expr
+
+    const_expr
+        = const_ident > const_expr
 
     cond_expr
         = add_expr (cond_expr_op add_expr)* > fold_left
@@ -86,8 +92,8 @@ grammar! bailey {
     callable_expr
         = function_call > function_call
         / literal > lit_to_exp
-        / constant
-        / var
+        / const_expr
+        / var_expr
         / array
         / map
         / lparen expr rparen
@@ -98,7 +104,7 @@ grammar! bailey {
 
     param_list
         = empty_param_list
-        / ident (comma ident)* > param_list
+        / var_ident (comma var_ident)* > param_list
 
     empty_list = &rparen > empty_list
     empty_param_list = &rparen > empty_param_list
@@ -109,9 +115,9 @@ grammar! bailey {
     lowcase_ltr = ["a-z_"]
     ident_char = (upcase_ltr / lowcase_ltr / digit)
     
-    var = !digit !keyword &lowcase_ltr ident_char+ spacing > var
-    ident = !digit !keyword ident_char+ spacing > ident
-    constant = !keyword !digit &upcase_ltr ident_char+ spacing > constant
+    var_ident = !digit !keyword &lowcase_ltr ident_char+ spacing > var_ident
+    meth_ident = !digit !keyword ident_char+ spacing > meth_ident
+    const_ident = !keyword !digit &upcase_ltr ident_char+ spacing > const_ident
 
     literal
         = string_lit
@@ -241,17 +247,26 @@ grammar! bailey {
         (Box::new(key), Box::new(val))
     }
 
-    fn constant(raw_text: Vec<char>) -> Expr {
-        Expr::Const(Ident(to_string(raw_text)))
+    fn const_expr(ident: Ident) -> Expr {
+        Expr::Const(Box::new(ident))
     }
 
-    fn ident(raw_text: Vec<char>) -> Ident {
-        Ident(to_string(raw_text))
+    fn const_ident(raw_text: Vec<char>) -> Ident {
+        Ident::Const(to_string(raw_text))
     }
 
-    fn var(raw_text: Vec<char>) -> Expr {
-        Expr::Var(Ident(to_string(raw_text)))
+    fn var_expr(ident: Ident) -> Expr {
+        Expr::Var(Box::new(ident))
     }
+
+    fn var_ident(raw_text: Vec<char>) -> Ident {
+        Ident::Var(to_string(raw_text))
+    }
+
+    fn meth_ident(raw_text: Vec<char>) -> Ident {
+        Ident::Meth(to_string(raw_text))
+    }
+
 
     fn add_bin_op() -> BinOp { Add }
     fn sub_bin_op() -> BinOp { Sub }
@@ -276,16 +291,16 @@ grammar! bailey {
         })
     }
 
-    fn assign_stmt(var: Expr, expr: Expr) -> Stmt {
+    fn assign_stmt(var: Ident, expr: Expr) -> Stmt {
         Stmt::VarAssign(Box::new(var), Box::new(expr))
     }
 
-    fn const_assign_stmt(constant: Expr, expr: Expr) -> Stmt {
+    fn const_assign_stmt(constant: Ident, expr: Expr) -> Stmt {
         Stmt::ConstAssign(Box::new(constant), Box::new(expr))
     }
 
     fn class_decl(class: Ident, methods: Vec<Decl>) -> Decl {
-        Decl::Class(class, methods)
+        Decl::Class(Box::new(class), methods)
     }
 
     fn method_decl(meth: Ident, params: Vec<Ident>, block: Block) -> Decl {
