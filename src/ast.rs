@@ -1,8 +1,5 @@
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Ident(pub String);
-
-#[derive(Debug, Clone, PartialEq)]
 pub enum BinOp {
     Add,
     Sub,
@@ -28,8 +25,8 @@ pub enum UnOp {
 pub enum Stmt {
     Decl(Box<Decl>),
     Expr(Box<Expr>),
-    VarAssign(Box<Expr>, Box<Expr>),
-    ConstAssign(Box<Expr>, Box<Expr>),
+    VarAssign(Box<Ident>, Box<Expr>),
+    ConstAssign(Box<Ident>, Box<Expr>),
     If(Box<Expr>, Box<Block>, Option<Box<Block>>),
     While(Box<Expr>, Box<Block>) 
 }
@@ -37,13 +34,13 @@ pub enum Stmt {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Decl {
     Method(Ident, Vec<Ident>, Box<Block>),
-    Class(Ident, Vec<Decl>)
+    Class(Box<Ident>, Vec<Decl>)
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
-    Var(Ident),
-    Const(Ident),
+    Var(Box<Ident>),
+    Const(Box<Ident>),
     Binary(BinOp, Box<Expr>, Box<Expr>),
     Unary(UnOp, Box<Expr>),
     Message(Option<Box<Expr>>, Ident, Vec<Expr>),   
@@ -65,4 +62,9 @@ pub struct Block {
     pub stmts: Vec<Stmt>
 }
 
-
+#[derive(Debug, Clone, PartialEq)]
+pub enum Ident {
+    Const(String),
+    Var(String),
+    Meth(String)
+}
