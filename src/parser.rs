@@ -415,3 +415,129 @@ impl Parser {
     }
 }
 
+mod tests {
+    use super::Parser;
+    use ast::Stmt;
+    use ast::Expr;
+    use ast::Literal;
+    use ast::Ident;
+    use ast::P;
+    
+    macro_rules! expr {
+        ($e:expr) => (
+            Stmt::Expr($e)
+        );
+    }
+
+    macro_rules! literal {
+        ($e:expr) => (
+            P(Expr::Literal($e))
+        );
+    }
+    
+    macro_rules! integer {
+        ($e:expr) => (
+            P(Literal::Integer($e))
+        );
+    }
+
+    macro_rules! float {
+        ($e: expr) => (
+            P(Literal::Float($e))
+        );
+    }
+
+    macro_rules! str {
+        ($e:expr) => (
+            P(Literal::Str($e.to_string()))
+        );
+    }
+
+   macro_rules! array {
+    ( $( $x:expr ),* ) => {
+            P(Expr::Array(vec![$($x,)*]))
+        };
+    }
+
+   macro_rules! var {
+        ($e:expr) => {
+            P(Expr::Var($e))
+        };
+   }
+
+   macro_rules! var_ident {
+        ($e:expr) => {
+            P(Ident::Var($e.to_string()))
+        };
+   }
+   
+   macro_rules! map {
+    ( $( ($k:expr, $v:expr) ),* ) => {
+            P(Expr::Map(vec![$(($k, $v),)*]))
+        };
+    }
+
+   #[test]
+    fn test_parse_int_lit() {
+        let mut parser = Parser::new();
+        let code = "42;".to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![
+                expr!(literal!(integer!(42)))
+            ]
+        );
+    }
+
+    #[test]
+    fn test_parse_float_lit() {
+        let mut parser = Parser::new();
+        let code = "42.00;".to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![
+                expr!(literal!(float!(42.00)))
+            ]
+        );
+    }
+
+    #[test]
+    fn test_parse_string_lit() {
+        let mut parser = Parser::new();
+        let code = "\"fooooo\";".to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![
+                expr!(literal!(str!("fooooo")))
+            ]
+        );
+    }
+
+    #[test]
+    fn test_parse_array() {
+        let mut parser = Parser::new();
+        let code = "[1, 2.0, \"foo\"];".to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![
+            expr!(
+                array!(
+                    literal!(integer!(1)),
+                    literal!(float!(2.0)),
+                    literal!(str!("foo"))
+                )
+            )
+        ]);
+    }
+
+    #[test]
+    fn test_parse_map() {
+        let mut parser = Parser::new();
+        let code = "{a: 1, b: 2};".to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![
+            expr!(
+                map!(
+                    (var!(var_ident!("a")), literal!(integer!(1))),
+                    (var!(var_ident!("b")), literal!(integer!(2)))
+                )
+            )
+        ]);
+    }
+}
