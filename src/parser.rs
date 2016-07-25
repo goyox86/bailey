@@ -454,10 +454,16 @@ mod tests {
     }
 
    macro_rules! array {
-    ( $( $x:expr ),* ) => {
+        ( $( $x:expr ),* ) => {
             P(Expr::Array(vec![$($x,)*]))
         };
-    }
+   }
+
+   macro_rules! map {
+        ( $( ($k:expr, $v:expr) ),* ) => {
+            P(Expr::Map(vec![$(($k, $v),)*]))
+        };
+   }
 
    macro_rules! var {
         ($e:expr) => {
@@ -470,12 +476,18 @@ mod tests {
             P(Ident::Var($e.to_string()))
         };
    }
-   
-   macro_rules! map {
-    ( $( ($k:expr, $v:expr) ),* ) => {
-            P(Expr::Map(vec![$(($k, $v),)*]))
+
+   macro_rules! constant {
+        ($e:expr) => {
+            P(Expr::Const($e))
         };
-    }
+   }
+
+   macro_rules! const_ident {
+        ($e:expr) => {
+            P(Ident::Const($e.to_string()))
+        };
+   }
 
    #[test]
     fn test_parse_int_lit() {
@@ -537,6 +549,30 @@ mod tests {
                     (var!(var_ident!("a")), literal!(integer!(1))),
                     (var!(var_ident!("b")), literal!(integer!(2)))
                 )
+            )
+        ]);
+    }
+
+    #[test]
+    fn test_parse_const() {
+        let mut parser = Parser::new();
+        let code = "Awesome;".to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![
+            expr!(
+                constant!(const_ident!("Awesome"))
+            )
+        ]);
+    }
+
+    #[test]
+    fn test_parse_var() {
+        let mut parser = Parser::new();
+        let code = "foo;".to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![
+            expr!(
+                var!(var_ident!("foo"))
             )
         ]);
     }
