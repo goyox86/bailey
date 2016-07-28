@@ -27,6 +27,7 @@ grammar! bailey {
         / assign_stmt
         / if_stmt
         / while_stmt
+        / block > block_stmt
         / decl > decl_to_stmt
         / expr > expr_to_stmt
 
@@ -328,6 +329,10 @@ grammar! bailey {
         Stmt::While(P(cond), P(blk))
     }
 
+    fn block_stmt(blk: Block) -> Stmt {
+        Stmt::Block(P(blk))
+    }
+
     fn arg_list(first: Expr, mut rest: Vec<Expr>) -> Vec<Expr> {
         combine_one_with_many(first, rest)
     }
@@ -419,55 +424,77 @@ mod tests {
     use super::Parser;
     use ast::Stmt;
     use ast::Expr;
+    use ast::Decl;
     use ast::Literal;
     use ast::Ident;
+    use ast::Block;
+    use ast::BinOp;
     use ast::P;
     
-    macro_rules! expr {
+
+    macro_rules! expr_stmt {
         ($e:expr) => (
             Stmt::Expr($e)
         );
     }
+    
+    macro_rules! decl_stmt {
+        ($e:expr) => (
+            Stmt::Decl($e)
+        );
+    }
+    
+    macro_rules! meth_decl {
+        ($ident:expr, $args:expr, $blk:expr) => (
+            P(Decl::Method($ident, $args, $blk))
+        );
+    }
 
-    macro_rules! literal {
+    macro_rules! lit_expr {
         ($e:expr) => (
             P(Expr::Literal($e))
         );
     }
     
-    macro_rules! integer {
+    macro_rules! int_lit {
         ($e:expr) => (
             P(Literal::Integer($e))
         );
     }
 
-    macro_rules! float {
+    macro_rules! flt_lit {
         ($e: expr) => (
             P(Literal::Float($e))
         );
     }
 
-    macro_rules! str {
+    macro_rules! str_lit {
         ($e:expr) => (
             P(Literal::Str($e.to_string()))
         );
     }
 
-   macro_rules! array {
+   macro_rules! arr_expr {
         ( $( $x:expr ),* ) => {
             P(Expr::Array(vec![$($x,)*]))
         };
    }
 
-   macro_rules! map {
+   macro_rules! map_expr {
         ( $( ($k:expr, $v:expr) ),* ) => {
             P(Expr::Map(vec![$(($k, $v),)*]))
         };
    }
 
-   macro_rules! var {
+   macro_rules! var_expr {
         ($e:expr) => {
             P(Expr::Var($e))
+        };
+   }
+
+   macro_rules! bin_expr {
+        ($op:expr, $l:expr, $r:expr) => {
+            P(Expr::Binary($op, $l, $r))
         };
    }
 
@@ -477,16 +504,34 @@ mod tests {
         };
    }
 
-   macro_rules! constant {
+   macro_rules! const_expr {
         ($e:expr) => {
             P(Expr::Const($e))
         };
    }
 
    macro_rules! const_ident {
-        ($e:expr) => {
+       ($e:expr) => {
             P(Ident::Const($e.to_string()))
         };
+   }
+
+   macro_rules! meth_ident {
+       ($e:expr) => {
+            P(Ident::Meth($e.to_string()))
+        };
+   }
+
+   macro_rules! block_stmt {
+       ($e:expr) => {
+           Stmt::Block($e)
+       };
+   }
+
+   macro_rules! block {
+       ( $( $x:expr ),* ) => {
+           P(Block { stmts: vec![$($x,)*] })
+       };
    }
 
    #[test]
@@ -495,7 +540,11 @@ mod tests {
         let code = "42;".to_string();
         let ast = parser.parse(code).unwrap();
         assert_eq!(ast, vec![
-                expr!(literal!(integer!(42)))
+                expr_stmt!(
+                    lit_expr!(
+                        int_lit!(42)
+                    )
+                )
             ]
         );
     }
@@ -506,7 +555,11 @@ mod tests {
         let code = "42.00;".to_string();
         let ast = parser.parse(code).unwrap();
         assert_eq!(ast, vec![
-                expr!(literal!(float!(42.00)))
+                expr_stmt!(
+                    lit_expr!(
+                        flt_lit!(42.00)
+                    )
+                )
             ]
         );
     }
@@ -517,7 +570,11 @@ mod tests {
         let code = "\"fooooo\";".to_string();
         let ast = parser.parse(code).unwrap();
         assert_eq!(ast, vec![
-                expr!(literal!(str!("fooooo")))
+                expr_stmt!(
+                    lit_expr!(
+                        str_lit!("fooooo")
+                    )
+                )
             ]
         );
     }
@@ -528,11 +585,11 @@ mod tests {
         let code = "[1, 2.0, \"foo\"];".to_string();
         let ast = parser.parse(code).unwrap();
         assert_eq!(ast, vec![
-            expr!(
-                array!(
-                    literal!(integer!(1)),
-                    literal!(float!(2.0)),
-                    literal!(str!("foo"))
+            expr_stmt!(
+                arr_expr!(
+                    lit_expr!(int_lit!(1)),
+                    lit_expr!(flt_lit!(2.0)),
+                    lit_expr!(str_lit!("foo"))
                 )
             )
         ]);
@@ -544,10 +601,10 @@ mod tests {
         let code = "{a: 1, b: 2};".to_string();
         let ast = parser.parse(code).unwrap();
         assert_eq!(ast, vec![
-            expr!(
-                map!(
-                    (var!(var_ident!("a")), literal!(integer!(1))),
-                    (var!(var_ident!("b")), literal!(integer!(2)))
+            expr_stmt!(
+                map_expr!(
+                    (var_expr!(var_ident!("a")), lit_expr!(int_lit!(1))),
+                    (var_expr!(var_ident!("b")), lit_expr!(int_lit!(2)))
                 )
             )
         ]);
@@ -559,8 +616,8 @@ mod tests {
         let code = "Awesome;".to_string();
         let ast = parser.parse(code).unwrap();
         assert_eq!(ast, vec![
-            expr!(
-                constant!(const_ident!("Awesome"))
+            expr_stmt!(
+                const_expr!(const_ident!("Awesome"))
             )
         ]);
     }
@@ -571,8 +628,50 @@ mod tests {
         let code = "foo;".to_string();
         let ast = parser.parse(code).unwrap();
         assert_eq!(ast, vec![
-            expr!(
-                var!(var_ident!("foo"))
+            expr_stmt!(
+                var_expr!(var_ident!("foo"))
+            )
+        ]);
+    }
+
+    #[test]
+    fn test_parse_block() {
+        let mut parser = Parser::new();
+        let code = r#"
+            {
+                1
+                2 / 3
+            }
+        "#.to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![
+            block_stmt!(
+                block!(
+                    expr_stmt!(lit_expr!(int_lit!(1))),
+                    expr_stmt!(
+                        bin_expr!(
+                            BinOp::Div,
+                            lit_expr!(int_lit!(2)),
+                            lit_expr!(int_lit!(3))
+                        )
+                    )
+                )
+            )
+        ]);
+    }
+
+    #[test]
+    fn test_parse_method_no_args() {
+        let mut parser = Parser::new();
+        let code = "def method1() { };".to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![
+            decl_stmt!(
+                meth_decl!(
+                    meth_ident!("method1"),
+                    vec![],
+                    block!()
+                )
             )
         ]);
     }
