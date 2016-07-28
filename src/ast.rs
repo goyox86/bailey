@@ -28,7 +28,8 @@ pub enum Stmt {
     VarAssign(P<Ident>, P<Expr>),
     ConstAssign(P<Ident>, P<Expr>),
     If(P<Expr>, P<Block>, Option<P<Block>>),
-    While(P<Expr>, P<Block>) 
+    While(P<Expr>, P<Block>),
+    Block(P<Block>)
 }
 
 #[derive(Debug, Clone, PartialEq)]
