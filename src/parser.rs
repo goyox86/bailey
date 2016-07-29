@@ -13,9 +13,9 @@ grammar! bailey {
     use ast::Expr;
     use ast::Stmt;
     use ast::Decl;
+    use ast::BinOp::*;
     use ast::BinOp;
     use ast::Block;
-    use ast::BinOp::*;
     use ast::P;
     use std::str::FromStr;
 
@@ -310,10 +310,6 @@ grammar! bailey {
 
     fn block(stmts: Vec<Stmt>) -> Block {
         Block { stmts: stmts }
-    }
-
-    fn program(first: Stmt, mut rest: Vec<Stmt>) -> Vec<Stmt> {
-        combine_one_with_many(first, rest)
     }
 
     fn if_stmt(cond: Expr, true_blk: Block, false_blk: Option<Block>) -> Stmt {
