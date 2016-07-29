@@ -1,4 +1,5 @@
-use oak_runtime::stream::*;
+use oak_runtime::parse_state::*;
+use oak_runtime::parse_state::ParseResult::*;
 
 use std::io::prelude::*;
 use std::fs::File;
@@ -114,7 +115,7 @@ grammar! bailey {
     string_lit = (dbl_quot_string_lit / sng_quot_string_lit) spacing > string_lit
     array_lit = lsqbracket expr (comma expr)* rsqbracket > array_lit
 
-    map_entry =  (expr colon expr)
+    map_entry =  (expr colon expr) > map_entry
     map_lit = lbracket map_entry (comma map_entry)* rbracket > map_lit
 
     dbl_quot_string_lit = dbl_quot (spacing_char / !dbl_quot .)* dbl_quot
@@ -204,6 +205,10 @@ grammar! bailey {
 
     fn array_lit(first: PNode, rest: Vec<PNode>) -> PNode {
         PNode(ArrLit(combine_one_with_many(first, rest)))
+    }
+
+    fn map_entry(key: PNode, val: PNode) -> (PNode, PNode) {
+        (key, val)
     }
 
     fn map_lit(first: (PNode, PNode), rest: Vec<(PNode, PNode)>) -> PNode {
@@ -343,18 +348,16 @@ impl Parser {
     }
 
     pub fn parse(&mut self, code: String) -> Result<Vec<PNode>, String> {
-        let state = bailey::parse_program(code.stream());
+        let state = bailey::parse_program(code.into_state());
 
         match state.into_result() {
-            Ok((success, error)) => {
-                if success.partial_read() {
-                    Err(format!("Partial match: {:?} because: {}", success.data, error))
-                } else {
-                    self.ast = Some(success.data.clone());
-                    Ok(success.data)
-                }
+            Success(data) => Ok(data.clone()),
+            Partial(data, expectation) => {
+                Err(format!("Partial match: {:?} because: {:?}", data, expectation))
             }
-            Err(error) => Err(format!("Error: {}", error)),
+            Failure(expectation) => {
+                Err(format!("Error: {:?}", expectation))
+            }
         }
     }
 }
