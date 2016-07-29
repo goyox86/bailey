@@ -1,6 +1,7 @@
 #![feature(plugin)]
 #![plugin(oak)]
 #![allow(non_snake_case)]
+#![allow(dead_code)]
 
 extern crate oak_runtime;
 extern crate getopts;
