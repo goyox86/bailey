@@ -140,11 +140,11 @@ grammar! bailey {
     sng_quot_string_lit = sng_quot (spacing_char / !sng_quot .)* sng_quot
 
     spacing_char = [" \r\t"]
-    spacing = spacing_char* -> ()
-    newline = "\n" spacing -> ()
-    semicolon = ";" spacing -> ()
-    newlines = newline* spacing -> ()
-    terminator = (newline / semicolon) newlines -> ()
+    spacing = spacing_char* -> (^)
+    newline = "\n" spacing
+    semicolon = ";" spacing
+    newlines = newline* spacing
+    terminator = (newline / semicolon) newlines
 
     class_kw = "class" spacing
     def_kw = "def" spacing
@@ -196,10 +196,10 @@ grammar! bailey {
     andand_op  = "&&" spacing
     oror_op = "||" spacing
 
-    lparen = "(" newlines -> ()
-    rparen = newlines ")" -> ()
-    lbracket = "{" newlines -> ()
-    rbracket = newlines "}" -> ()
+    lparen = "(" newlines
+    rparen = newlines ")"
+    lbracket = "{" newlines
+    rbracket = newlines "}"
     lsqbracket = "[" newlines
     rsqbracket = newlines "]"
     dbl_quot = "\"" spacing
