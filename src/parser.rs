@@ -416,6 +416,7 @@ impl Parser {
     }
 }
 
+#[allow(unused_imports)]
 mod tests {
     use super::Parser;
     use ast::Stmt;
@@ -434,15 +435,57 @@ mod tests {
         );
     }
     
+    macro_rules! var_assign_stmt {
+        ($ident:expr, $e:expr) => (
+            Stmt::VarAssign($ident, $e)
+        );
+    }
+
     macro_rules! decl_stmt {
         ($e:expr) => (
             Stmt::Decl($e)
         );
     }
+
+    macro_rules! if_stmt {
+        ($cond:expr, $true_blk:expr, $false_blk:expr) => (
+            Stmt::If($cond, $true_blk, $false_blk)
+        );
+    }
     
+    macro_rules! while_stmt {
+        ($cond:expr, $blk:expr) => (
+            Stmt::While($cond, $blk)
+        );
+    }
+
+    macro_rules! block_stmt {
+       ($e:expr) => {
+           Stmt::Block($e)
+       };
+    }
+
+    macro_rules! block {
+       ( $( $x:expr ),* ) => {
+           P(Block { stmts: vec![$($x,)*] })
+       };
+    }
+
     macro_rules! meth_decl {
         ($ident:expr, $args:expr, $blk:expr) => (
             P(Decl::Method($ident, $args, $blk))
+        );
+    }
+
+    macro_rules! meth_args {
+        ( $( $e:expr ),* ) => {
+            vec![$(Ident::Var($e.to_string()),)*]
+        };
+    }
+
+    macro_rules! class_decl {
+        ($ident:expr, $meths:expr) => (
+            P(Decl::Class($ident, $meths))
         );
     }
 
@@ -494,15 +537,21 @@ mod tests {
         };
    }
 
-   macro_rules! var_ident {
-        ($e:expr) => {
-            P(Ident::Var($e.to_string()))
+   macro_rules! message_expr {
+        ($recv:expr, $meth:expr, $args:expr) => {
+            P(Expr::Message($recv, $meth, $args))
         };
    }
 
    macro_rules! const_expr {
         ($e:expr) => {
             P(Expr::Const($e))
+        };
+   }
+
+   macro_rules! var_ident {
+        ($e:expr) => {
+            P(Ident::Var($e.to_string()))
         };
    }
 
@@ -517,17 +566,11 @@ mod tests {
             P(Ident::Meth($e.to_string()))
         };
    }
-
-   macro_rules! block_stmt {
+ 
+   macro_rules! class_ident {
        ($e:expr) => {
-           Stmt::Block($e)
-       };
-   }
-
-   macro_rules! block {
-       ( $( $x:expr ),* ) => {
-           P(Block { stmts: vec![$($x,)*] })
-       };
+            P(Ident::Const($e.to_string()))
+        };
    }
 
    #[test]
@@ -668,6 +711,262 @@ mod tests {
                     vec![],
                     block!()
                 )
+            )
+        ]);
+    }
+    
+    #[test]
+    fn test_parse_method() {
+        let mut parser = Parser::new();
+        let code = "def method2(arg1, arg2) { };".to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![
+            decl_stmt!(
+                meth_decl!(
+                    meth_ident!("method2"),
+                    meth_args!("arg1", "arg2"),
+                    block!()
+                )
+            )
+        ]);
+    }
+    
+    #[test]
+    fn test_parse_method_with_body() {
+        let mut parser = Parser::new();
+        let code = r#"
+            def method3(arg1, arg2) {
+                arg1 + arg2
+            };
+        "#.to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![
+            decl_stmt!(
+                meth_decl!(
+                    meth_ident!("method3"),
+                    meth_args!("arg1", "arg2"),
+                    block!(
+                        expr_stmt!(
+                            bin_expr!(BinOp::Add,
+                                var_expr!(var_ident!("arg1")),
+                                var_expr!(var_ident!("arg2"))
+                            )
+                        )
+                    )
+                )
+            )
+        ]);
+    }
+    
+    #[test]
+    fn test_parse_class() {
+        let mut parser = Parser::new();
+        let code = r#"
+            class TestClass { }
+        "#.to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![
+            decl_stmt!(
+                class_decl!(
+                    class_ident!("TestClass"),
+                    vec![]
+                )
+            )
+        ]);
+    }
+    
+    #[test]
+    fn test_parse_assign_stmt() {
+        let mut parser = Parser::new();
+        let code = r#"
+            foo = 4 - 2
+        "#.to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![
+            var_assign_stmt!(
+                var_ident!("foo"),
+                bin_expr!(BinOp::Sub,
+                    lit_expr!(int_lit!(4)),
+                    lit_expr!(int_lit!(2))
+                )
+            ) 
+        ]);
+    }
+    
+    #[test]
+    fn test_parse_bin_expr() {
+        let mut parser = Parser::new();
+        let code = r#"
+            4.0 * 2
+        "#.to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![
+            expr_stmt!(
+                bin_expr!(BinOp::Mul,
+                    lit_expr!(flt_lit!(4.0)),
+                    lit_expr!(int_lit!(2))
+                )
+            )
+        ]);
+    }
+
+    #[test]
+    fn test_parse_msg_recv_no_args() {
+        let mut parser = Parser::new();
+        let code = r#"
+            1.foo()
+        "#.to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![
+            expr_stmt!(
+                message_expr!(Some(lit_expr!(int_lit!(1))),
+                    meth_ident!("foo"),
+                    vec![]
+                )    
+            ) 
+        ]);
+    }
+
+    // [TODO]: Replace Expr::Literal with macros or modify ast to have a Vec<Box<Expr>> type - 2016-07-29 03:23P
+    #[test]
+    fn test_parse_msg_recv_args() {
+        let mut parser = Parser::new();
+        let code = r#"
+            1.bar(2, "baz", 2.0)
+        "#.to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![
+            expr_stmt!(
+                message_expr!(Some(lit_expr!(int_lit!(1))),
+                    meth_ident!("bar"),
+                    vec![
+                        Expr::Literal(int_lit!(2)),
+                        Expr::Literal(str_lit!("baz")),
+                        Expr::Literal(flt_lit!(2.0))
+                    ]
+                )    
+            ) 
+        ]);
+    }
+
+    #[test]
+    fn test_parse_msg_no_recv_no_args() {
+        let mut parser = Parser::new();
+        let code = r#"
+            bar()
+        "#.to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![
+            expr_stmt!(
+                message_expr!(None,
+                    meth_ident!("bar"),
+                    vec![]
+                )    
+            ) 
+        ]);
+    }
+
+    #[test]
+    fn test_parse_msg_no_recv_args() {
+        let mut parser = Parser::new();
+        let code = r#"
+            quux(2, "baz", 2.0)
+        "#.to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![
+            expr_stmt!(
+                message_expr!(None,
+                    meth_ident!("quux"),
+                    vec![
+                        Expr::Literal(int_lit!(2)),
+                        Expr::Literal(str_lit!("baz")),
+                        Expr::Literal(flt_lit!(2.0))
+                    ]
+                )    
+            ) 
+        ]);
+    }
+    
+    #[test]
+    fn test_parse_while_stmt() {
+        let mut parser = Parser::new();
+        let code = r#"
+            while i < n {
+                i = i + 1
+            }
+        "#.to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![
+            while_stmt!(
+                bin_expr!(BinOp::Lt,
+                    var_expr!(var_ident!("i")),
+                    var_expr!(var_ident!("n"))
+                ),
+                block!(
+                    var_assign_stmt!(
+                        var_ident!("i"),
+                        bin_expr!(BinOp::Add,
+                            var_expr!(var_ident!("i")),
+                            lit_expr!(int_lit!(1))
+                        )
+                    )
+                )
+            )
+        ]);
+    }
+    
+    #[test]
+    fn test_parse_if_stmt() {
+        let mut parser = Parser::new();
+        let code = r#"
+            if n == 0 {
+                1
+            }
+        "#.to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![
+            if_stmt!(
+                bin_expr!(BinOp::Eq,
+                    var_expr!(var_ident!("n")),
+                    lit_expr!(int_lit!(0))
+                ),
+                block!(
+                    expr_stmt!(
+                        lit_expr!(int_lit!(1))
+                    )
+                ),
+                None
+            )
+        ]);
+    }
+
+    #[test]
+    fn test_parse_if_else_stmt() {
+        let mut parser = Parser::new();
+        let code = r#"
+            if n == 0 {
+                1
+            } else {
+                0
+            }
+        "#.to_string();
+        let ast = parser.parse(code).unwrap();
+        assert_eq!(ast, vec![
+            if_stmt!(
+                bin_expr!(BinOp::Eq,
+                    var_expr!(var_ident!("n")),
+                    lit_expr!(int_lit!(0))
+                ),
+                block!(
+                    expr_stmt!(
+                        lit_expr!(int_lit!(1))
+                    )
+                ),
+                Some(block!(
+                    expr_stmt!(
+                        lit_expr!(int_lit!(0))
+                    )
+                ))
             )
         ]);
     }
