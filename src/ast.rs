@@ -1,3 +1,4 @@
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum BinOp {
     Add,
@@ -15,52 +16,62 @@ pub enum BinOp {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Node {
-    Ident(String),
-    Const(String),
-    IntLit(u64),
-    FltLit(f64),
-    StrLit(String),
-    ArrLit(Vec<PNode>),
-    MapLit(Vec<(PNode, PNode)>),
-    Block(Vec<PNode>),
-    AssignStmt {
-        var: PNode,
-        expr: PNode,
-    },
-    BinExpr {
-        op: BinOp,
-        left: PNode,
-        right: PNode,
-    },
-    Message {
-        recv: Option<PNode>,
-        meth: PNode,
-        args: Vec<PNode>,
-    },
-    WhileStmt {
-        cond: PNode,
-        blk: PNode,
-    },
-    IfStmt {
-        cond: PNode,
-        true_blk: PNode,
-        false_blk: Option<PNode>,
-    },
-    ClassDecl {
-        class: PNode,
-        meths: Vec<PNode>,
-    },
-    MethodDecl {
-        meth: PNode,
-        params: Vec<PNode>,
-        blk: PNode,
-    },
+pub enum UnOp {
+    Not,
+    Neg
 }
 
-pub type PNode = Box<Node>;
+#[derive(Debug, Clone, PartialEq)]
+pub enum Stmt {
+    Decl(P<Decl>),
+    Expr(P<Expr>),
+    VarAssign(P<Ident>, P<Expr>),
+    ConstAssign(P<Ident>, P<Expr>),
+    If(P<Expr>, P<Block>, Option<P<Block>>),
+    While(P<Expr>, P<Block>),
+    Block(P<Block>)
+}
 
-#[allow(non_snake_case)]
-pub fn PNode(value: Node) -> PNode {
+#[derive(Debug, Clone, PartialEq)]
+pub enum Decl {
+    Method(P<Ident>, Vec<Ident>, P<Block>),
+    Class(P<Ident>, Vec<Decl>)
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Expr {
+    Var(P<Ident>),
+    Const(P<Ident>),
+    Binary(BinOp, P<Expr>, P<Expr>),
+    Unary(UnOp, P<Expr>),
+    Message(Option<P<Expr>>, P<Ident>, Vec<Expr>),
+    Array(Vec<P<Expr>>),
+    Map(Vec<(P<Expr>, P<Expr>)>),
+    Literal(P<Literal>)
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Literal {
+    Integer(i64),
+    Float(f64),
+    Str(String),
+    Bool(bool)
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Block {
+    pub stmts: Vec<Stmt>
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Ident {
+    Const(String),
+    Var(String),
+    Meth(String)
+}
+
+pub type P<T> = Box<T>;
+
+pub fn P<T>(value: T) -> P<T> {
     Box::new(value)
 }
